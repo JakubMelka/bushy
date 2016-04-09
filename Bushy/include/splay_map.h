@@ -25,6 +25,8 @@
 #include <utility>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
+#include <type_traits>
 
 namespace bushy
 {
@@ -101,6 +103,10 @@ template<typename Key,
          typename Policy = splay_map_policy<splay_mode::FOURTH, splay_mode::THIRD>>
 class splay_map
 {
+private:
+    struct node;
+    struct base_node;
+
 public:
     typedef Key key_type;
     typedef T mapped_type;
@@ -114,8 +120,137 @@ public:
     typedef typename std::allocator_traits<Allocator>::pointer pointer;
     typedef typename std::allocator_traits<Allocator>::const_pointer const_pointer;
 
-    class iterator;
-    class const_iterator;
+    // Iterator implementation. It is implemented as template, so we does not need
+    // two iterator classes. It uses types from this map class, and is parametrized
+    // by Value, which can be either const value_type (for constant iterator), or
+    // value_type (for non-constant iterator).
+    template<typename Value>
+    class iterator_impl : public std::iterator<std::bidirectional_iterator_tag,
+            Value,
+            difference_type,
+            typename std::conditional<std::template is_const<Value>::value, const_pointer, pointer>::type,
+            typename std::conditional<std::template is_const<Value>::value, const_reference, reference>::type>
+    {
+    public:
+        iterator_impl() : _node(nullptr), _proxy(nullptr) { }
+        iterator_impl(const iterator_impl& other) = default; // default copy constructor; we just copy pointers
+        ~iterator_impl() = default; // we do not need extra functionality here
+
+        // Static assert, so this class is instantiated only with correct type.
+        static_assert(std::is_same<typename std::remove_const<Value>::type, value_type>::value, "Iterator error - invalid template instantiation!");
+
+        // Conversion constructor from iterator to const iterator. We use a template hack so we cannot create
+        // the non-constant iterator from constant iterator. We allow iterator creation only, if we can convert
+        // the type ValueFrom to the type Value;
+        template<typename ValueFrom>
+        iterator_impl(const iterator_impl<ValueFrom>& other, typename std::enable_if<std::template is_convertible<ValueFrom, Value>::value, int>::type enable = int()) :
+            _node(other._node),
+            _proxy(other._proxy)
+        {
+
+        }
+
+        iterator_impl& operator=(const iterator_impl& other) = default; // default copy assignment operator; we just copy pointers
+
+        // Dereference operators
+        typename iterator_impl::reference operator*() const { return _node->asNode()->value; }
+        typename iterator_impl::pointer operator->() const { return &_node->asNode()->value; }
+
+        iterator_impl& operator++()
+        {
+            _node = _proxy->_next(_node);
+            return *this;
+        }
+
+        iterator_impl operator++(int)
+        {
+            iterator_impl temp(*this);
+            _node = _proxy->_next(_node);
+            return temp;
+        }
+
+        iterator_impl& operator--()
+        {
+            _node = _proxy->_prev(_node);
+            return *this;
+        }
+
+        iterator_impl operator--(int)
+        {
+            iterator_impl temp(*this);
+            _node = _proxy->_prev(_node);
+            return temp;
+        }
+
+        bool operator==(const iterator_impl& other) const
+        {
+            const bool isNullLeft = !_proxy || &_proxy->_root == _node;
+            const bool isNullRight = !other._proxy || &other._proxy->_root == other._node;
+
+            if (isNullLeft != isNullRight)
+            {
+                // One iterator is end iterator, other is valid.
+                return false;
+            }
+
+            if (isNullLeft && isNullRight)
+            {
+                // Both iterators are invalid (pass-the-end iterators)
+                return true;
+            }
+
+            // Now, both iterators are valid, we compare if they points to the same
+            // node (we can simply test the node pointers, because the map owns the node,
+            // pointers are unique). So it cannot happen situation, where node pointers are
+            // equal, but proxies not.
+
+            return _node == other._node;
+        }
+
+        // Template version for comparation of constant and non-constant iterators
+        template<typename OtherValue>
+        bool operator==(const iterator_impl<OtherValue>& other) const
+        {
+            return (*this == const_cast_iterator(other));
+        }
+
+        bool operator!=(const iterator_impl& other) const
+        {
+            return !(*this == other);
+        }
+
+        // Template version for comparation of constant and non-constant iterators
+        template<typename OtherValue>
+        bool operator!=(const iterator_impl<OtherValue>& other) const
+        {
+            return !(*this == const_cast_iterator(other));
+        }
+
+        // Swaps the two iterators of the same type (restricted to the same type, we cannot
+        // swap constant and non-constant iterator).
+        void swap(iterator_impl& other)
+        {
+            std::swap(_node, other._node);
+            std::swap(_proxy, other._proxy);
+        }
+
+    private:
+        // Restricted constructor; used in the iterator casts
+        explicit iterator_impl(base_node* node, splay_map* proxy) : _node(node), _proxy(proxy) { }
+
+        // Converts the other iterator type to this iterator type
+        template<typename OtherValue>
+        iterator_impl const_cast_iterator(const iterator_impl<OtherValue>& iterator) const
+        {
+            return iterator_impl(iterator._node, iterator._proxy);
+        }
+
+        base_node* _node;
+        splay_map* _proxy;
+    };
+
+    using iterator = iterator_impl<value_type>;
+    using const_iterator = iterator_impl<const value_type>;
 
     typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
@@ -143,8 +278,8 @@ public:
     splay_map() : splay_map(Compare()) { }
 
     explicit splay_map(const Compare& comp, const Allocator& alloc = Allocator()) :
-        root{&root, &root, &root},
-        comp(comp),
+        _root{&_root, &_root, &_root},
+        _comp(comp),
         _alloc(alloc),
         _size(0)
     {
@@ -168,13 +303,13 @@ public:
     }
 
     splay_map(const splay_map& other) :
-        splay_map(other.comp, std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator()))
+        splay_map(other._comp, std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator()))
     {
         insert(other.cbegin(), other.cend());
     }
 
     splay_map(const splay_map& other, const Allocator& alloc) :
-        splay_map(other.comp, alloc)
+        splay_map(other._comp, alloc)
     {
         insert(other.cbegin(), other.cend());
     }
@@ -381,8 +516,8 @@ public:
     template< class K >
     const_iterator upper_bound( const K& x ) const;
 
-    inline key_compare key_comp() const { return comp; }
-    inline value_compare value_comp() const { return value_compare(comp); }
+    inline key_compare key_comp() const { return _comp; }
+    inline value_compare value_comp() const { return value_compare(_comp); }
 
     // Memory consumption
     static constexpr unsigned long memory_consumption_empty() { return sizeof(splay_map); }
@@ -400,16 +535,19 @@ private:
         base_node* parent;
         base_node* left;
         base_node* right;
+
+        inline node* asNode() { return static_cast<node*>(this); }
+        inline const node* asNode() const { return static_cast<const node*>(this); }
     };
 
     // Finds the next node in the tree
     base_node* _next(base_node* node) const
     {
-        if (node == &root)
+        if (node == &_root)
         {
             // "Cyclical" iteration over the range - we return the first node
             // to ensure the iterators will be valid.
-            return root->left;
+            return _root->left;
         }
 
         if (node->right)
@@ -425,11 +563,11 @@ private:
     // Finds the previous node in the tree
     base_node* _prev(base_node* node) const
     {
-        if (node == &root)
+        if (node == &_root)
         {
             // "Cyclical" iteration over the range - we return the last node
             // to ensure the iterators will be valid.
-            return root->right;
+            return _root->right;
         }
 
         if (node->left)
@@ -445,12 +583,12 @@ private:
     // Finds the node with maximal value in the subtree
     base_node* _max(base_node* node)
     {
-        base_node* last = nullptr;
+        base_node* last = &_root;
         do
         {
             last = node;
             node = node->right;
-        } while (node && node != &root);
+        } while (node != &_root);
 
         return last;
     }
@@ -458,12 +596,12 @@ private:
     // Finds the node with minimal value in the subtree
     base_node* _min(base_node* node)
     {
-        base_node* last = nullptr;
+        base_node* last = &_root;
         do
         {
             last = node;
             node = node->left;
-        } while (node && node != &root);
+        } while (node != &_root);
 
         return last;
     }
@@ -477,10 +615,10 @@ private:
     // Root of this map, parent points to the root of the tree,
     // left child is minimum of the tree, right child is the maximum
     // of the tree,
-    base_node root;
+    base_node _root;
 
     // Key comparator defined by the constructor
-    Compare comp;
+    Compare _comp;
 
     // We rebind the allocator to allocate nodes
     typedef typename Allocator::template rebind<node>::other NodeAllocator;
@@ -521,8 +659,20 @@ bool operator>=( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
 namespace std
 {
 
-template<class Key, class T, class Compare, class Alloc>
-void swap(bushy::splay_map<Key,T,Compare,Alloc>& lhs, bushy::splay_map<Key,T,Compare,Alloc>& rhs )
+template<class Key, class T, class Compare, class Alloc, class Policy>
+void swap(bushy::splay_map<Key, T, Compare, Alloc, Policy>& lhs, bushy::splay_map<Key, T, Compare, Alloc, Policy>& rhs )
+{
+    lhs.swap(rhs);
+}
+
+template<class Key, class T, class Compare, class Alloc, class Policy>
+void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& rhs )
+{
+    lhs.swap(rhs);
+}
+
+template<class Key, class T, class Compare, class Alloc, class Policy>
+void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& rhs )
 {
     lhs.swap(rhs);
 }
