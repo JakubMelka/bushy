@@ -39,3 +39,6 @@ win32-msvc
 {
     QMAKE_CXXFLAGS += -FAs
 }
+
+HEADERS += \
+    MapTestAlgorithms.h

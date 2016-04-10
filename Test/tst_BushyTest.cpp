@@ -4,6 +4,10 @@
 
 #include <map>
 
+#include "MapTestAlgorithms.h"
+
+#include "../Bushy/include/splay_map.h"
+
 class BushyTest : public QObject
 {
     Q_OBJECT
@@ -14,7 +18,8 @@ public:
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
-    void testMap();
+
+    void testConstructors();
 };
 
 BushyTest::BushyTest()
@@ -31,9 +36,30 @@ void BushyTest::cleanupTestCase()
 {
 }
 
-void BushyTest::testMap()
+void BushyTest::testConstructors()
 {
-    QVERIFY2(true, "Failure");
+    using Compare = std::less<int>;
+    using Allocator = std::allocator<std::pair<const int, char>>;
+    using TestMap = bushy::splay_map<int, char>;
+    using StandardMap = std::map<int, char>;
+
+    {
+        // Explicit empty constructor
+        bushy::splay_map<int, char> testMap;
+        std::map<int, char> standardMap;
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        std::less<int> comparator;
+
+        // Constructor with comparator
+        TestMap testMap(comparator);
+        StandardMap standardMap(comparator);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
 }
 
 QTEST_MAIN(BushyTest)
