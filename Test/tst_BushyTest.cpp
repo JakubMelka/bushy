@@ -60,6 +60,59 @@ void BushyTest::testConstructors()
 
         test_map_equality<TestMap, StandardMap>(testMap, standardMap);
     }
+
+    {
+        std::allocator<std::pair<int, char>> allocator;
+
+        // Constructor with comparator
+        TestMap testMap(allocator);
+        StandardMap standardMap(allocator);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        std::less<int> comparator;
+        std::allocator<std::pair<int, char>> allocator;
+
+        // Range creation constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap testMap(standardMap.cbegin(), standardMap.cend(), comparator, allocator);
+
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        std::allocator<std::pair<int, char>> allocator;
+
+        // Range creation constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap testMap(standardMap.cbegin(), standardMap.cend(), allocator);
+
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Range creation constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap(other);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        std::allocator<std::pair<int, char>> allocator;
+
+        // Range creation constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend(), allocator);
+        TestMap testMap(other, allocator);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
 }
 
 QTEST_MAIN(BushyTest)

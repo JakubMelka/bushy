@@ -373,7 +373,8 @@ public:
         insert(other.cbegin(), other.cend());
     }
 
-    splay_map& operator=(splay_map&& other);
+    // TODO: Fix this code!
+    /*splay_map& operator=(splay_map&& other);*/
 
     splay_map& operator=(std::initializer_list<value_type> ilist)
     {
@@ -459,27 +460,62 @@ public:
 
     bool empty() const { return _size == 0; }
     size_type size() const { return _size; }
-    size_type max_size() const { return std::numeric_limits<size_type>::max(); }
+    size_type max_size() const { return std::numeric_limits<size_type>::max() / memory_consumption_item(); }
 
     // Modifiers
 
     void clear() { _cleanup(); }
 
-    std::pair<iterator, bool> insert( const value_type& value );
+    std::pair<iterator, bool> insert(const value_type& value)
+    {
+        return _insert_by_val(value);
+    }
 
     template<class P>
-    std::pair<iterator, bool> insert( P&& value );
-    std::pair<iterator, bool> insert( value_type&& value );
-    iterator insert( const_iterator hint, const value_type& value );
+    std::pair<iterator, bool> insert(P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type enable = int())
+    {
+        return emplace(std::forward<P>(value));
+    }
 
-    template< class P >
-    iterator insert( const_iterator hint, P&& value );
-    iterator insert( const_iterator hint, value_type&& value );
+    std::pair<iterator, bool> insert(value_type&& value)
+    {
+        return emplace(std::move(value));
+    }
 
-    template< class InputIt >
-    void insert( InputIt first, InputIt last );
+    iterator insert(const_iterator hint, const value_type& value)
+    {
+        return _insert_by_val_hint(hint, value);
+    }
 
-    void insert( std::initializer_list<value_type> ilist );
+    template<class P>
+    iterator insert(const_iterator hint, P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type enable = int())
+    {
+        // Use emplace hint function
+        return emplace_hint(hint, std::move(value));
+    }
+
+    iterator insert(const_iterator hint, value_type&& value)
+    {
+        // Use emplace hint function
+        return emplace_hint(hint, std::move(value));
+    }
+
+    template<class InputIt>
+    void insert(InputIt first, InputIt last)
+    {
+        for (; first != last; ++first)
+        {
+            // We assume that we are inserting sorted sequence at end. For this reason, we
+            // try to insert item before end() of the map.
+            emplace_hint(end(), *first);
+        }
+    }
+
+    void insert(std::initializer_list<value_type> ilist)
+    {
+        // Use the range insert to insert from initializer list
+        insert(ilist.begin(), ilist.end());
+    }
 
     template <class M>
     std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj);
@@ -493,13 +529,13 @@ public:
     template <class M>
     iterator insert_or_assign(const_iterator hint, key_type&& k, M&& obj);
 
-    template< class... Args >
-    std::pair<iterator,bool> emplace( Args&&... args );
+    template<class... Args>
+    std::pair<iterator, bool> emplace(Args&&... args);
 
-    template <class... Args>
-    iterator emplace_hint( const_iterator hint, Args&&... args );
+    template<class... Args>
+    iterator emplace_hint(const_iterator hint, Args&&... args);
 
-    template <class... Args>
+    template<class... Args>
     std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
 
     template <class... Args>
@@ -522,13 +558,13 @@ public:
 
     size_type count(const Key& key) const
     {
-        return _find(key) != &_root ? 1 : 0;
+        return (_find(key) != &_root) ? 1 : 0;
     }
 
     template<class K>
     size_type count(const K& x) const
     {
-        return _find<K>(key) != &_root ? 1 : 0;
+        return (_find<K>(key) != &_root) ? 1 : 0;
     }
 
     iterator find(const Key& key)
@@ -823,6 +859,215 @@ private:
         return node->parent;
     }
 
+    // Finds the place where to insert the element with particular key. If the
+    // key cannot be found, then returns nil and parent, where to insert, otherwise
+    // it returns the found node (and parent node has undefined value...).
+    base_node* _search_for_insert_hint(const Key& key, base_node** parent)
+    {
+        base_node* current = _root.parent;
+        *parent = _root.parent;
+
+        while (current != &_root)
+        {
+            // Set the new parent node
+            *parent = current;
+
+            if (_comp(key, current->asNode()->value.first))
+            {
+                // Key is lesser than value in the current node, walk left
+                current = current->left;
+            }
+            else if (_comp(current->asNode()->value.first, key))
+            {
+                // Key is greater than value in the current node, walk right
+                current = current->right;
+            }
+            else
+            {
+                // We have found the current node
+                break;
+            }
+        }
+
+        return current;
+    }
+
+    // Creates a new node with value_type constructed from value. Pointers
+    // to the nodes are uninitialized.
+    template<typename P>
+    base_node* _buy_node(P&& value)
+    {
+        node* new_node = _alloc.allocate(1);
+        _alloc.construct(new_node, std::forward<P>(value));
+        return new_node;
+    }
+
+    // Inserts new value passed by constant reference
+    std::pair<iterator, bool> _insert_by_val(const value_type& value)
+    {
+        if (empty())
+        {
+            // Map is empty, we must create a node
+            base_node* single_node = _buy_node(value);
+
+            _root.left = single_node;
+            _root.right = single_node;
+            _root.parent = single_node;
+
+            single_node->parent = &_root;
+            single_node->left = &_root;
+            single_node->right = &_root;
+
+            // Increment map size...
+            ++_size;
+
+            return std::make_pair(iterator(single_node, this), true);
+        }
+        else
+        {
+            base_node* parent;
+            base_node* found = _search_for_insert_hint(value.first, &parent);
+
+            if (found == &_root)
+            {
+                // Key is not in the map, insert it
+                base_node* new_node = _buy_node(value);
+
+                new_node->parent = parent;
+                new_node->left = &_root;
+                new_node->right = &_root;
+
+                if (_comp(parent->asNode()->value.first, new_node->asNode()->value.first))
+                {
+                    // Parent has lower value than new node -> right child
+                    parent->right = new_node;
+
+                    if (_root.right == parent)
+                    {
+                        // new maximum in the tree reached, remember it
+                        _root.right = new_node;
+                    }
+                }
+                else
+                {
+                    // Parent has higher value than new node -> left child
+                    parent->left = new_node;
+
+                    if (_root.left == parent)
+                    {
+                        // new minimum in the tree reached, remember it
+                        _root.left = new_node;
+                    }
+                }
+
+                // Increment map size...
+                ++_size;
+
+                // If we have to splay on insert, then splay
+                if (_policy.insert_policy.splay_hint())
+                {
+                    _splay(new_node);
+                }
+
+                return std::make_pair(iterator(new_node, this), true);
+            }
+            else
+            {
+                // Key is already in the map, do nothing
+                return std::make_pair(iterator(found, this), false);
+            }
+        }
+    }
+
+    // Inserts a new value passed with constant reference (version with a hint)
+    std::pair<iterator, bool> _insert_by_val_hint(const_iterator hint, const value_type& value)
+    {
+        if (empty())
+        {
+            // Use default insertion function in case the map is empty
+            return _insert_by_val(value);
+        }
+
+        // The first thing we must do is hint validation - we must find out, if the hint
+        // is correct and we can use it. If we cannot, we must use default insertion.
+        // We assume we get iterator BEFORE which we want to insert the value.
+
+        if (hint != cend() && _comp(hint->first, value.first))
+        {
+            // We got an iterator, which is AFTER which we want to insert the value.
+            // Try to increment to get correct hint.
+            ++hint;
+        }
+
+        // Now we must validate the hint (we are trying to insert value immediately before
+        // the place the hint points to). If the hint is not valid, use default insertion
+        // algorithm. We validate iterators (hint - 1, hint), the output valid sequence should
+        // be (hint - 1, value, hint).
+
+        // Left is valid, if it is lesser, than current value (or it does not exists).
+        const_iterator hint_prev = std::prev(hint);
+        const bool leftValid = hint == cbegin() || _comp(hint_prev->first, value.first);
+        const bool rightValid = hint == cend() || _comp(value.first, hint->first);
+
+        if (leftValid && rightValid)
+        {
+            // Use hint to create a new node
+            base_node* parent = hint._node;
+            bool addLeftChild = true;
+            if (parent->left != &_root)
+            {
+                parent = hint_prev._node;
+                addLeftChild = false;
+            }
+
+            // Key is not in the map, insert it
+            base_node* new_node = _buy_node(value);
+
+            new_node->parent = parent;
+            new_node->left = &_root;
+            new_node->right = &_root;
+
+            if (!addLeftChild)
+            {
+                // Parent has lower value than new node -> right child
+                parent->right = new_node;
+
+                if (_root.right == parent)
+                {
+                    // new maximum in the tree reached, remember it
+                    _root.right = new_node;
+                }
+            }
+            else
+            {
+                // Parent has higher value than new node -> left child
+                parent->left = new_node;
+
+                if (_root.left == parent)
+                {
+                    // new minimum in the tree reached, remember it
+                    _root.left = new_node;
+                }
+            }
+
+            // Increment map size...
+            ++_size;
+
+            // If we have to splay on insert, then splay
+            if (_policy.insert_policy.splay_hint())
+            {
+                _splay(new_node);
+            }
+
+            return std::make_pair(iterator(new_node, this), true);
+        }
+        else
+        {
+            // The hint is useless (invalid).
+            return _insert_by_val(value);
+        }
+    }
+
     // Finds the node with this key, returns root, if the node
     // with that key cannot be found.
     base_node* _find(const Key& key) const
@@ -1020,6 +1265,9 @@ private:
     // Ordinary node containing data
     struct node : public base_node
     {
+        template<typename P>
+        node(P&& p) : value(std::forward<P>(p)) { }
+
         value_type value;
     };
 
