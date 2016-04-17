@@ -89,13 +89,26 @@ struct splay_decider<splay_mode::NEVER>
 
 // Policy, which defines the behaviour of the splay
 // tree during various operations.
+//
+// NOTE: variables must be mutable, because we are modifying
+// the internal state of the tree even for 'const' functions,
+// so we mark the policies as mutable.
 template<splay_mode Insert, splay_mode Find>
 struct splay_map_policy
 {
-    impl::splay_decider<Insert> insert_policy;
-    impl::splay_decider<Find> find_policy;
+    mutable impl::splay_decider<Insert> insert_policy;
+    mutable impl::splay_decider<Find> find_policy;
 };
 
+// Splay map - STL like container implemented as splay tree.
+// Custom compare function and allocator can be used, and
+// also custom splay policy for splaying can be used.
+//
+// NOTE: As the internal state of the tree can be changed even
+// for 'const' operations, some variables are mutable and
+// the tree is not thread-safe. Please do not use it in multithread
+// programs, or protect it with mutex even for constant operations
+// (such as finds, accessing elements, etc.).
 template<typename Key,
          typename T,
          typename Compare = std::less<Key>,
@@ -143,7 +156,7 @@ public:
         // the non-constant iterator from constant iterator. We allow iterator creation only, if we can convert
         // the type ValueFrom to the type Value;
         template<typename ValueFrom>
-        iterator_impl(const iterator_impl<ValueFrom>& other, typename std::enable_if<std::template is_convertible<ValueFrom, Value>::value, int>::type enable = int()) :
+        iterator_impl(const iterator_impl<ValueFrom>& other, typename std::enable_if<std::template is_convertible<ValueFrom, Value>::value, int>::type = int()) :
             _node(other._node),
             _proxy(other._proxy)
         {
@@ -472,7 +485,7 @@ public:
     }
 
     template<class P>
-    std::pair<iterator, bool> insert(P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type enable = int())
+    std::pair<iterator, bool> insert(P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type = int())
     {
         return emplace(std::forward<P>(value));
     }
@@ -488,7 +501,7 @@ public:
     }
 
     template<class P>
-    iterator insert(const_iterator hint, P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type enable = int())
+    iterator insert(const_iterator hint, P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type = int())
     {
         // Use emplace hint function
         return emplace_hint(hint, std::move(value));
@@ -517,34 +530,40 @@ public:
         insert(ilist.begin(), ilist.end());
     }
 
-    template <class M>
+    template<class M>
     std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj);
 
-    template <class M>
+    template<class M>
     std::pair<iterator, bool> insert_or_assign(key_type&& k, M&& obj);
 
-    template <class M>
+    template<class M>
     iterator insert_or_assign(const_iterator hint, const key_type& k, M&& obj);
 
-    template <class M>
+    template<class M>
     iterator insert_or_assign(const_iterator hint, key_type&& k, M&& obj);
 
     template<class... Args>
-    std::pair<iterator, bool> emplace(Args&&... args);
+    std::pair<iterator, bool> emplace(Args&&... args)
+    {
+        return _emplace_hint(const_iterator(), false, std::forward<Args>(args)...);
+    }
 
     template<class... Args>
-    iterator emplace_hint(const_iterator hint, Args&&... args);
+    iterator emplace_hint(const_iterator hint, Args&&... args)
+    {
+        return _emplace_hint(hint, true, std::forward<Args>(args)...).first;
+    }
 
     template<class... Args>
     std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
 
-    template <class... Args>
+    template<class... Args>
     std::pair<iterator, bool> try_emplace(key_type&& k, Args&&... args);
 
-    template <class... Args>
+    template<class... Args>
     iterator try_emplace(const_iterator hint, const key_type& k, Args&&... args);
 
-    template <class... Args>
+    template<class... Args>
     iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args);
 
     iterator erase( const_iterator pos );
@@ -726,6 +745,103 @@ private:
         return left_child;
     }
 
+
+    // Rotates the tree node to the left. It does not checks if node/right_child
+    // really exists, so please be careful when calling this function.
+    //
+    //              node                            right_child                *
+    //             /    \                          /         \                 *
+    //      left_child  right_child  ==>         node       rr_child           *
+    //                   /     \                 /   \                         *
+    //              rl_child  rr_child   left_child  rl_child                  *
+    inline base_node* _left_rotate(base_node* node) const
+    {
+        base_node* parent = node->parent;
+        base_node* right_child = node->right;
+        base_node* rl_child = right_child->left;
+
+        // Rotate left
+        right_child->left = node;
+        node->parent = right_child;
+
+        // Move left grandchild of the right child
+        node->right = rl_child;
+        if (rl_child != &_root)
+        {
+            rl_child->parent = node;
+        }
+
+        // Fix the root
+        right_child->parent = parent;
+        if (parent != &_root)
+        {
+            if (parent->right == node)
+            {
+                parent->right = right_child;
+            }
+            else
+            {
+                parent->left = right_child;
+            }
+        }
+        else
+        {
+            // Mark the new root!
+            _root.parent = right_child;
+        }
+
+        return right_child;
+    }
+
+    // Splays the node to the root
+    void _splay(base_node* node) const
+    {
+        while (node->parent != &_root)
+        {
+            if (node->parent->parent == &_root)
+            {
+                // Node level is 1 (so it is directly under the root of the tree)
+                if (node->parent->left == node)
+                {
+                    _right_rotate(node->parent);
+                }
+                else
+                {
+                    _left_rotate(node->parent);
+                }
+            }
+            else
+            {
+                const bool node_is_left_child = node->parent->left == node;
+                const bool node_is_right_child = !node_is_left_child;
+                const bool node_parent_is_left_child = node->parent->parent->left == node->parent;
+                const bool node_parent_is_right_child = !node_parent_is_left_child;
+
+                // Use double rotations when neccessary
+                if (node_is_left_child && node_parent_is_left_child)
+                {
+                    _right_rotate(node->parent->parent);
+                    _right_rotate(node->parent);
+                }
+                else if (node_is_right_child && node_parent_is_right_child)
+                {
+                    _left_rotate(node->parent->parent);
+                    _left_rotate(node->parent);
+                }
+                else if (node_is_left_child && node_parent_is_right_child)
+                {
+                    _right_rotate(node->parent);
+                    _left_rotate(node->parent);
+                }
+                else if (node_is_right_child && node_parent_is_left_child)
+                {
+                    _left_rotate(node->parent);
+                    _right_rotate(node->parent);
+                }
+            }
+        }
+    }
+
     // Destroys the entire tree.
     void _cleanup()
     {
@@ -752,8 +868,7 @@ private:
             work_node = work_node->right;
 
             // Now, we delete the node
-            _alloc.destroy(to_destroy);
-            _alloc.deallocate(to_destroy, 1);
+            _orphan_node(to_destroy);
         }
     }
 
@@ -767,7 +882,7 @@ private:
             return _root.left;
         }
 
-        if (node->right)
+        if (node->right != &_root)
         {
             return _min(node->right);
         }
@@ -787,7 +902,7 @@ private:
             return _root.right;
         }
 
-        if (node->left)
+        if (node->left != &_root)
         {
             return _max(node->left);
         }
@@ -894,11 +1009,11 @@ private:
 
     // Creates a new node with value_type constructed from value. Pointers
     // to the nodes are uninitialized.
-    template<typename P>
-    base_node* _buy_node(P&& value)
+    template<typename... Args>
+    base_node* _buy_node(Args&&... args)
     {
         node* new_node = _alloc.allocate(1);
-        _alloc.construct(new_node, std::forward<P>(value));
+        _alloc.construct(new_node, std::forward<Args>(args)...);
         return new_node;
     }
 
@@ -933,41 +1048,8 @@ private:
                 // Key is not in the map, insert it
                 base_node* new_node = _buy_node(value);
 
-                new_node->parent = parent;
-                new_node->left = &_root;
-                new_node->right = &_root;
-
-                if (_comp(parent->asNode()->value.first, new_node->asNode()->value.first))
-                {
-                    // Parent has lower value than new node -> right child
-                    parent->right = new_node;
-
-                    if (_root.right == parent)
-                    {
-                        // new maximum in the tree reached, remember it
-                        _root.right = new_node;
-                    }
-                }
-                else
-                {
-                    // Parent has higher value than new node -> left child
-                    parent->left = new_node;
-
-                    if (_root.left == parent)
-                    {
-                        // new minimum in the tree reached, remember it
-                        _root.left = new_node;
-                    }
-                }
-
-                // Increment map size...
-                ++_size;
-
-                // If we have to splay on insert, then splay
-                if (_policy.insert_policy.splay_hint())
-                {
-                    _splay(new_node);
-                }
+                // Insert the node and splay it, if necessary
+                _insert_node_and_splay(new_node, parent, _comp(parent->asNode()->value.first, new_node->asNode()->value.first));
 
                 return std::make_pair(iterator(new_node, this), true);
             }
@@ -1013,51 +1095,18 @@ private:
         {
             // Use hint to create a new node
             base_node* parent = hint._node;
-            bool addLeftChild = true;
+            bool right_child = false;
             if (parent->left != &_root)
             {
                 parent = hint_prev._node;
-                addLeftChild = false;
+                right_child = true;
             }
 
             // Key is not in the map, insert it
             base_node* new_node = _buy_node(value);
 
-            new_node->parent = parent;
-            new_node->left = &_root;
-            new_node->right = &_root;
-
-            if (!addLeftChild)
-            {
-                // Parent has lower value than new node -> right child
-                parent->right = new_node;
-
-                if (_root.right == parent)
-                {
-                    // new maximum in the tree reached, remember it
-                    _root.right = new_node;
-                }
-            }
-            else
-            {
-                // Parent has higher value than new node -> left child
-                parent->left = new_node;
-
-                if (_root.left == parent)
-                {
-                    // new minimum in the tree reached, remember it
-                    _root.left = new_node;
-                }
-            }
-
-            // Increment map size...
-            ++_size;
-
-            // If we have to splay on insert, then splay
-            if (_policy.insert_policy.splay_hint())
-            {
-                _splay(new_node);
-            }
+            // Insert the node and splay it, if necessary
+            _insert_node_and_splay(new_node, parent, right_child);
 
             return std::make_pair(iterator(new_node, this), true);
         }
@@ -1066,6 +1115,149 @@ private:
             // The hint is useless (invalid).
             return _insert_by_val(value);
         }
+    }
+
+    // Inserts the node into the map, parent is a parent of the node,
+    // parameter right_child determines, if the node is added as right
+    // child of the parent (left child if the value of the parameter is false).
+    void _insert_node_and_splay(base_node* node, base_node* parent, bool right_child)
+    {
+        node->parent = parent;
+        node->left = &_root;
+        node->right = &_root;
+
+        if (right_child)
+        {
+            // Parent has lower value than new node -> right child
+            parent->right = node;
+
+            if (_root.right == parent)
+            {
+                // new maximum in the tree reached, remember it
+                _root.right = node;
+            }
+        }
+        else
+        {
+            // Parent has higher value than new node -> left child
+            parent->left = node;
+
+            if (_root.left == parent)
+            {
+                // new minimum in the tree reached, remember it
+                _root.left = node;
+            }
+        }
+
+        // Increment map size...
+        ++_size;
+
+        // If we have to splay on insert, then splay
+        if (_policy.insert_policy.splay_hint())
+        {
+            _splay(node);
+        }
+    }
+
+    // Tries to emplace a new node (with hint or with no hint)
+    template<class... Args>
+    std::pair<iterator, bool> _emplace_hint(const_iterator hint, bool use_hint, Args&&... args)
+    {
+        // First, we must obtain key, which we can insert into the map. To obtain it,
+        // we create a new node constructed from the arguments. If no insertion takes place, then
+        // the new node is deallocated. We assume, that if we use this function, we are
+        // very often successfull, so deallocation occurs in not so many cases, so it is
+        // not a performance problem.
+        base_node* node = _buy_node(std::forward<Args>(args)...);
+
+        if (empty())
+        {
+            // Map is empty - it is easy case, just move pointers.
+            _root.left = node;
+            _root.right = node;
+            _root.parent = node;
+
+            node->parent = &_root;
+            node->left = &_root;
+            node->right = &_root;
+
+            // Increment map size...
+            ++_size;
+
+            return std::make_pair(iterator(node, this), true);
+        }
+
+        // Temporary store reference to the value
+        const value_type& value = node->asNode()->value;
+
+        if (use_hint)
+        {
+            // The first thing we must do is hint validation - we must find out, if the hint
+            // is correct and we can use it. If we cannot, we must use default insertion.
+            // We assume we get iterator BEFORE which we want to insert the value.
+
+            if (hint != cend() && _comp(hint->first, value.first))
+            {
+                // We got an iterator, which is AFTER which we want to insert the value.
+                // Try to increment to get correct hint.
+                ++hint;
+            }
+
+            // Now we must validate the hint (we are trying to insert value immediately before
+            // the place the hint points to). If the hint is not valid, use default insertion
+            // algorithm. We validate iterators (hint - 1, hint), the output valid sequence should
+            // be (hint - 1, value, hint).
+
+            // Left is valid, if it is lesser, than current value (or it does not exists).
+            const_iterator hint_prev = std::prev(hint);
+            const bool leftValid = hint == cbegin() || _comp(hint_prev->first, value.first);
+            const bool rightValid = hint == cend() || _comp(value.first, hint->first);
+
+            if (leftValid && rightValid)
+            {
+                // Use hint to create a new node
+                base_node* parent = hint._node;
+                bool right_child = false;
+                if (parent->left != &_root)
+                {
+                    parent = hint_prev._node;
+                    right_child = true;
+                }
+
+                // Insert the node and splay it, if necessary
+                _insert_node_and_splay(node, parent, right_child);
+
+                return std::make_pair(iterator(node, this), true);
+            }
+        }
+
+        // The hint was useless (or we did not receive the hint...), perform
+        // standard search and insertion algorithm.
+        base_node* parent;
+        base_node* found = _search_for_insert_hint(value.first, &parent);
+
+        if (found == &_root)
+        {
+            // Insert the node and splay it, if necessary
+            _insert_node_and_splay(node, parent, _comp(parent->asNode()->value.first, node->asNode()->value.first));
+
+            return std::make_pair(iterator(node, this), true);
+        }
+        else
+        {
+            // Key is already in the map, we must deallocate the new node
+            _orphan_node(node);
+
+            return std::make_pair(iterator(found, this), false);
+        }
+    }
+
+    // Calls the destructor of the node and deallocates the memory
+    // using default allocator.
+    void _orphan_node(base_node* node)
+    {
+        _alloc.destroy(node->asNode());
+        _alloc.deallocate(node->asNode(), 1);
     }
 
     // Finds the node with this key, returns root, if the node
@@ -1265,8 +1457,8 @@ private:
     // Ordinary node containing data
     struct node : public base_node
     {
-        template<typename P>
-        node(P&& p) : value(std::forward<P>(p)) { }
+        template<typename... Args>
+        node(Args&&... args) : value(std::forward<Args>(args)...) { }
 
         value_type value;
     };

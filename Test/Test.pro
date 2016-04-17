@@ -14,7 +14,8 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 
-SOURCES += tst_BushyTest.cpp
+SOURCES += \
+    tst_splay_map_test.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 DESTDIR = $$OUT_PWD/..

@@ -32,7 +32,6 @@ void test_map_equality(const Map1& map1, const Map2& map2)
 
     QVERIFY(map1.size() == map2.size());
     QVERIFY(map1.empty() == map2.empty());
-    QVERIFY(map1.max_size() == map2.max_size());
 
     QVERIFY(is_range_equals(map1.begin(), map1.end(), map2.begin(), map2.end()));
     QVERIFY(is_range_equals(map1.cbegin(), map1.cend(), map2.cbegin(), map2.cend()));
