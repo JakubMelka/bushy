@@ -384,6 +384,7 @@ public:
         }
 
         insert(other.cbegin(), other.cend());
+        return *this;
     }
 
     // TODO: Fix this code!
@@ -393,6 +394,7 @@ public:
     {
         clear();
         insert(ilist.begin(), ilist.end());
+        return *this;
     }
 
     // Allocator functions
@@ -428,8 +430,15 @@ public:
         }
     }
 
-    T& operator[](const Key& key);
-    T& operator[]( Key&& key );
+    T& operator[](const Key& key)
+    {
+        return _access(key);
+    }
+
+    T& operator[](Key&& key)
+    {
+        return _access(std::move(key));
+    }
 
     const T& value(const Key& key, const T& defaultValue) const
     {
@@ -682,7 +691,7 @@ public:
     static constexpr unsigned long memory_consumption_item() { return sizeof(node); }
 
     // Estimates overall memory consumption
-    unsigned long memory_consumption(unsigned long additional_item_memory = 0) const { return memory_consumption_empty() + _size * (memory_consumption_item() + additional_item_memory); }
+    constexpr unsigned long memory_consumption(unsigned long additional_item_memory = 0) const { return memory_consumption_empty() + _size * (memory_consumption_item() + additional_item_memory); }
 
 private:
     // Base node containing only pointers (to the parent/left child/right child),
@@ -870,6 +879,12 @@ private:
             // Now, we delete the node
             _orphan_node(to_destroy);
         }
+
+        // Reinit the map to zero nodes
+        _size = 0;
+        _root.parent = &_root;
+        _root.left = &_root;
+        _root.right = &_root;
     }
 
     // Finds the next node in the tree
@@ -1017,6 +1032,56 @@ private:
         return new_node;
     }
 
+    // Accesses the element by the key
+    template<typename K>
+    mapped_type& _access(K&& key)
+    {
+        if (empty())
+        {
+            // Map is empty, we must create a node
+            base_node* single_node = _buy_node(std::forward(key), mapped_type());
+
+            _root.left = single_node;
+            _root.right = single_node;
+            _root.parent = single_node;
+
+            single_node->parent = &_root;
+            single_node->left = &_root;
+            single_node->right = &_root;
+
+            // Increment map size...
+            ++_size;
+
+            return single_node->asNode()->value.second;
+        }
+        else
+        {
+            base_node* parent;
+            base_node* found = _search_for_insert_hint(key, &parent);
+
+            if (found == &_root)
+            {
+                // Key is not in the map, insert it
+                base_node* new_node = _buy_node(std::forward(key), mapped_type());
+
+                // Insert the node and splay it, if necessary
+                _insert_node_and_splay(new_node, parent, _comp(parent->asNode()->value.first, new_node->asNode()->value.first));
+
+                return new_node->asNode()->value.second;
+            }
+            else
+            {
+                // Key is already in the map, do nothing (except splaying the node, we assume the find functionality)
+                if (_policy.find_policy.splay_hint())
+                {
+                    _splay(found);
+                }
+
+                return found->asNode()->value.second;
+            }
+        }
+    }
+
     // Inserts new value passed by constant reference
     std::pair<iterator, bool> _insert_by_val(const value_type& value)
     {
@@ -1055,7 +1120,12 @@ private:
             }
             else
             {
-                // Key is already in the map, do nothing
+                // Key is already in the map, do nothing (except splaying the node, we assume the find functionality)
+                if (_policy.find_policy.splay_hint())
+                {
+                    _splay(found);
+                }
+
                 return std::make_pair(iterator(found, this), false);
             }
         }

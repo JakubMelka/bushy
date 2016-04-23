@@ -22,6 +22,7 @@ private Q_SLOTS:
 
     void testConstructors();
     void testIterators();
+    void testAssignOperators();
 };
 
 splay_map_test::splay_map_test()
@@ -251,6 +252,88 @@ void splay_map_test::testIterators()
             QVERIFY((it == bushy::splay_map<int, char>::iterator()));
             QVERIFY((it == bushy::splay_map<int, char>::iterator{}));
         }
+    }
+}
+
+void splay_map_test::testAssignOperators()
+{
+    using TestMap = bushy::splay_map<int, char>;
+    using StandardMap = std::map<int, char>;
+
+    {
+        // Assign operator I.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap = other;
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator II.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap = std::move(other);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator III.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap;
+        testMap = other;
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator IV.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap;
+        testMap = std::move(other);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator V.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap testMap;
+        testMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator VI.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap testMap = { {4, 'a'}, {5, 'b'}, {6, 'c'} };
+        testMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator VII.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap = { {4, 'a'}, {5, 'b'}, {6, 'c'} };
+        testMap = other;
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        // Assign operator VIII.
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap = { {4, 'a'}, {5, 'b'}, {6, 'c'} };
+        testMap = std::move(other);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
     }
 }
 
