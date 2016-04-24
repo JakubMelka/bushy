@@ -133,7 +133,7 @@ public:
     typedef typename std::allocator_traits<Allocator>::pointer pointer;
     typedef typename std::allocator_traits<Allocator>::const_pointer const_pointer;
 
-    // Iterator implementation. It is implemented as template, so we does not need
+    // Iterator implementation. It is implemented as template, so we do not need
     // two iterator classes. It uses types from this map class, and is parametrized
     // by Value, which can be either const value_type (for constant iterator), or
     // value_type (for non-constant iterator).
@@ -271,8 +271,8 @@ public:
     using iterator = iterator_impl<value_type>;
     using const_iterator = iterator_impl<const value_type>;
 
-    typedef std::reverse_iterator<iterator> reverse_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::template reverse_iterator<iterator> reverse_iterator;
+    typedef std::template reverse_iterator<const_iterator> const_reverse_iterator;
 
     // Value comparator class
     class value_compare
@@ -540,16 +540,28 @@ public:
     }
 
     template<class M>
-    std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj);
+    std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj)
+    {
+        return _insert_or_assign_hint(const_iterator(), false, k, std::forward(obj));
+    }
 
     template<class M>
-    std::pair<iterator, bool> insert_or_assign(key_type&& k, M&& obj);
+    std::pair<iterator, bool> insert_or_assign(key_type&& k, M&& obj)
+    {
+        return _insert_or_assign_hint(const_iterator(), false, std::move(k), std::forward(obj));
+    }
 
     template<class M>
-    iterator insert_or_assign(const_iterator hint, const key_type& k, M&& obj);
+    iterator insert_or_assign(const_iterator hint, const key_type& k, M&& obj)
+    {
+        return _insert_or_assign_hint(hint, true, k, std::forward(obj)).first;
+    }
 
     template<class M>
-    iterator insert_or_assign(const_iterator hint, key_type&& k, M&& obj);
+    iterator insert_or_assign(const_iterator hint, key_type&& k, M&& obj)
+    {
+        return _insert_or_assign_hint(hint, true, std::move(k), std::forward(obj)).first;
+    }
 
     template<class... Args>
     std::pair<iterator, bool> emplace(Args&&... args)
@@ -564,16 +576,28 @@ public:
     }
 
     template<class... Args>
-    std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args);
+    std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args)
+    {
+        return _try_emplace_hint(const_iterator(), false, k, std::forward(args)...);
+    }
 
     template<class... Args>
-    std::pair<iterator, bool> try_emplace(key_type&& k, Args&&... args);
+    std::pair<iterator, bool> try_emplace(key_type&& k, Args&&... args)
+    {
+        return _try_emplace_hint(const_iterator(), false, std::move(k), std::forward(args)...);
+    }
 
     template<class... Args>
-    iterator try_emplace(const_iterator hint, const key_type& k, Args&&... args);
+    iterator try_emplace(const_iterator hint, const key_type& k, Args&&... args)
+    {
+        return _try_emplace_hint(hint, true, k, std::forward(args)...).first;
+    }
 
     template<class... Args>
-    iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args);
+    iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args)
+    {
+        return _try_emplace_hint(hint, true, std::move(k), std::forward(args)...).first;
+    }
 
     iterator erase( const_iterator pos );
     iterator erase( iterator pos );
@@ -1229,6 +1253,199 @@ private:
         }
     }
 
+    // Tries to emplace a new node
+    template<typename Key, typename... Args>
+    std::pair<iterator, bool> _try_emplace_hint(const_iterator hint, bool use_hint, Key&& key, Args&&... args)
+    {
+        if (empty())
+        {
+            // Map is empty - it is easy case, just create a new node.
+            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+
+            _root.left = node;
+            _root.right = node;
+            _root.parent = node;
+
+            node->parent = &_root;
+            node->left = &_root;
+            node->right = &_root;
+
+            // Increment map size...
+            ++_size;
+
+            return std::make_pair(iterator(node, this), true);
+        }
+
+        if (use_hint)
+        {
+            // The first thing we must do is hint validation - we must find out, if the hint
+            // is correct and we can use it. If we cannot, we must use default insertion.
+            // We assume we get iterator BEFORE which we want to insert the value.
+
+            if (hint != cend() && _comp(hint->first, key))
+            {
+                // We got an iterator, which is AFTER which we want to insert the value.
+                // Try to increment to get correct hint.
+                ++hint;
+            }
+
+            // Now we must validate the hint (we are trying to insert value immediately before
+            // the place the hint points to). If the hint is not valid, use default insertion
+            // algorithm. We validate iterators (hint - 1, hint), the output valid sequence should
+            // be (hint - 1, value, hint).
+
+            // Left is valid, if it is lesser, than current value (or it does not exists).
+            const_iterator hint_prev = std::prev(hint);
+            const bool leftValid = hint == cbegin() || _comp(hint_prev->first, key);
+            const bool rightValid = hint == cend() || _comp(key, hint->first);
+
+            if (leftValid && rightValid)
+            {
+                // Use hint to create a new node
+                base_node* parent = hint._node;
+                bool right_child = false;
+                if (parent->left != &_root)
+                {
+                    parent = hint_prev._node;
+                    right_child = true;
+                }
+
+                // Create a new node
+                base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+
+                // Insert the node and splay it, if necessary
+                _insert_node_and_splay(node, parent, right_child);
+
+                return std::make_pair(iterator(node, this), true);
+            }
+        }
+
+        // The hint was useless (or we did not receive the hint...), perform
+        // standard search and insertion algorithm.
+        base_node* parent;
+        base_node* found = _search_for_insert_hint(value.first, &parent);
+
+        if (found == &_root)
+        {
+            // Create a new node
+            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+
+            // Insert the node and splay it, if necessary
+            _insert_node_and_splay(node, parent, _comp(parent->asNode()->value.first, node->asNode()->value.first));
+
+            return std::make_pair(iterator(node, this), true);
+        }
+        else
+        {
+            // Key is already in the map, try_emplace does not assign a value, so we just return the value (and splay the node,
+            // if neccessary)
+            if (_policy.find_policy.splay_hint())
+            {
+                _splay(found);
+            }
+
+            return std::make_pair(iterator(found, this), false);
+        }
+    }
+
+    // Inserts a new node (with hint or with no hint), or assigns
+    // a new value to the map item.
+    template<typename Key, typename Value>
+    std::pair<iterator, bool> _insert_or_assign_hint(const_iterator hint, bool use_hint, Key&& key, Value&& value)
+    {
+        if (empty())
+        {
+            // Map is empty - it is easy case, just create a new node.
+            base_node* node = _buy_node(std::forward(key), std::forward(value));
+
+            _root.left = node;
+            _root.right = node;
+            _root.parent = node;
+
+            node->parent = &_root;
+            node->left = &_root;
+            node->right = &_root;
+
+            // Increment map size...
+            ++_size;
+
+            return std::make_pair(iterator(node, this), true);
+        }
+
+        if (use_hint)
+        {
+            // The first thing we must do is hint validation - we must find out, if the hint
+            // is correct and we can use it. If we cannot, we must use default insertion.
+            // We assume we get iterator BEFORE which we want to insert the value.
+
+            if (hint != cend() && _comp(hint->first, key))
+            {
+                // We got an iterator, which is AFTER which we want to insert the value.
+                // Try to increment to get correct hint.
+                ++hint;
+            }
+
+            // Now we must validate the hint (we are trying to insert value immediately before
+            // the place the hint points to). If the hint is not valid, use default insertion
+            // algorithm. We validate iterators (hint - 1, hint), the output valid sequence should
+            // be (hint - 1, value, hint).
+
+            // Left is valid, if it is lesser, than current value (or it does not exists).
+            const_iterator hint_prev = std::prev(hint);
+            const bool leftValid = hint == cbegin() || _comp(hint_prev->first, key);
+            const bool rightValid = hint == cend() || _comp(key, hint->first);
+
+            if (leftValid && rightValid)
+            {
+                // Use hint to create a new node
+                base_node* parent = hint._node;
+                bool right_child = false;
+                if (parent->left != &_root)
+                {
+                    parent = hint_prev._node;
+                    right_child = true;
+                }
+
+                // Create a new node
+                base_node* node = _buy_node(std::forward(key), std::forward(value));
+
+                // Insert the node and splay it, if necessary
+                _insert_node_and_splay(node, parent, right_child);
+
+                return std::make_pair(iterator(node, this), true);
+            }
+        }
+
+        // The hint was useless (or we did not receive the hint...), perform
+        // standard search and insertion algorithm.
+        base_node* parent;
+        base_node* found = _search_for_insert_hint(value.first, &parent);
+
+        if (found == &_root)
+        {
+            // Create a new node
+            base_node* node = _buy_node(std::forward(key), std::forward(value));
+
+            // Insert the node and splay it, if necessary
+            _insert_node_and_splay(node, parent, _comp(parent->asNode()->value.first, node->asNode()->value.first));
+
+            return std::make_pair(iterator(node, this), true);
+        }
+        else
+        {
+            // Key is already in the map, we must assign a new value
+            found->asNode()->value->second = std::forward(value);
+
+            // Find mode - splay the node
+            if (_policy.find_policy.splay_hint())
+            {
+                _splay(found);
+            }
+
+            return std::make_pair(iterator(found, this), false);
+        }
+    }
+
     // Tries to emplace a new node (with hint or with no hint)
     template<class... Args>
     std::pair<iterator, bool> _emplace_hint(const_iterator hint, bool use_hint, Args&&... args)
@@ -1317,6 +1534,12 @@ private:
         {
             // Key is already in the map, we must deallocate the new node
             _orphan_node(node);
+
+            // splay the node if neccessary
+            if (_policy.find_policy.splay_hint())
+            {
+                _splay(found);
+            }
 
             return std::make_pair(iterator(found, this), false);
         }
