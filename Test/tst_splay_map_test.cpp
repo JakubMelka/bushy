@@ -23,6 +23,7 @@ private Q_SLOTS:
     void testConstructors();
     void testIterators();
     void testAssignOperators();
+    void testMiscellanneousOperations();
 };
 
 splay_map_test::splay_map_test()
@@ -334,6 +335,37 @@ void splay_map_test::testAssignOperators()
         testMap = std::move(other);
 
         test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+}
+
+template<typename T>
+struct test_allocator : std::allocator<T>
+{
+    test_allocator() : valid(false) { }
+
+    template<class U>
+    test_allocator(const test_allocator<U>& other) : valid(other.valid) { }
+
+    template<class U>
+    struct rebind
+    {
+        typedef test_allocator<U> other;
+    };
+
+    bool valid;
+};
+
+void splay_map_test::testMiscellanneousOperations()
+{
+    {
+        // Test allocator assignment
+        using TestMap = bushy::splay_map<int, char, std::less<int>, test_allocator<std::pair<const int,char>>>;
+        test_allocator<std::pair<const int,char>> alloc;
+        alloc.valid = true;
+
+        TestMap testMap(alloc);
+
+        QVERIFY(testMap.get_allocator().valid);
     }
 }
 

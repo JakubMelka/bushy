@@ -599,10 +599,36 @@ public:
         return _try_emplace_hint(hint, true, std::move(k), std::forward(args)...).first;
     }
 
-    iterator erase( const_iterator pos );
-    iterator erase( iterator pos );
-    iterator erase( const_iterator first, const_iterator last );
-    size_type erase( const key_type& key );
+    iterator erase(const_iterator pos)
+    {
+        return _erase(pos._node);
+    }
+
+    iterator erase(iterator pos)
+    {
+        return _erase(pos._node);
+    }
+
+    iterator erase(const_iterator first, const_iterator last)
+    {
+        for (const_iterator it = first; it != last; it = _erase(it._node));
+
+        return last;
+    }
+
+    size_type erase(const key_type& key)
+    {
+        base_node* node = _find(key);
+        if (node != &_root)
+        {
+            _erase(node);
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 
     void swap( splay_map& other );
 
@@ -1011,6 +1037,71 @@ private:
         }
 
         return node->parent;
+    }
+
+    // Erases the node from the splay map.
+    iterator _erase(base_node* node)
+    {
+        base_node* next = _next(node);
+
+        // Fix pointers to the minimum/maximum nodes
+        if (_root.left == node)
+        {
+            _root.left = next;
+        }
+
+        if (_root.right == node)
+        {
+            _root.right = _prev(node);
+        }
+
+        // Splay the node to the root, so we can easily delete it
+        _splay(node);
+
+        const bool hasLeftChild = node->left != &_root;
+        const bool hasRightChild = node->right != &_root;
+
+        // First case, we have single element in the map. Easy...
+        if (!hasLeftChild && !hasRightChild)
+        {
+            _root.parent = &_root;
+        }
+        else if (hasLeftChild != hasRightChild)
+        {
+            // We have single child
+            base_node* child = hasLeftChild ? node->left : node->right;
+            child->parent = &_root;
+            _root.parent = child;
+        }
+        else
+        {
+            // We have two children. Heuristic: move right child to the root,
+            // if we are deleting range, it will be already splayed.
+            // First thing we must do, is remove parent-child link.
+            if (next->parent->left == next)
+            {
+                // It is a left child...
+                next->parent->left = &_root;
+            }
+            else
+            {
+                // it is a right child...
+                next->parent->right = &_root;
+            }
+
+            next->left = node->left;
+            next->right = node->right;
+            next->parent = &_root;
+            _root.parent = next;
+        }
+
+        // Delete the deleted node
+        _orphan_node(node);
+
+        // Decrease the size of the map
+        --_size;
+
+        return iterator(next, this);
     }
 
     // Finds the place where to insert the element with particular key. If the
@@ -1779,29 +1870,89 @@ private:
 
 }   // namespace bushy
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator==( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                 const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+template<class Key, class T, class Compare, class Alloc>
+bool operator==(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+                const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    if (lhs.size() != rhs.size())
+    {
+        // Size is different, maps cannot be equal
+        return false;
+    }
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator!=( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                 const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+    auto it1 = lhs.cbegin();
+    auto it2 = rhs.cbegin();
+    auto last1 = lhs.cend();
+    auto last2 = rhs.cend();
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator<( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+    // We test only first iterator, ranges have equal size,
+    // so the test of the second iterator is not needed.
+    for (; it1 != last1; ++it1, ++it2)
+    {
+        if (!(*it1 == *it2))
+        {
+            return false;
+        }
+    }
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator<=( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                 const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+    return true;
+}
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator>( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+template<class Key, class T, class Compare, class Alloc>
+bool operator!=(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+                const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    return !(lhs == rhs);
+}
 
-template< class Key, class T, class Compare, class Alloc >
-bool operator>=( const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
-                 const bushy::splay_map<Key,T,Compare,Alloc>& rhs );
+template<class Key, class T, class Compare, class Alloc>
+bool operator<(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+               const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    auto it1 = lhs.cbegin();
+    auto it2 = rhs.cbegin();
+    auto last1 = lhs.cend();
+    auto last2 = rhs.cend();
+
+    bushy::splay_map<Key,T,Compare,Alloc>::value_compare comp = lhs.value_comp();
+
+    for (; (it1 != last1) && (it2 != last2); ++it1, ++it2)
+    {
+        if (comp(*it1, *it2))
+        {
+            // First is lesser
+            return true;
+        }
+        if (comp(*it2, *it1))
+        {
+            // Second is lesser
+            return false;
+        }
+    }
+
+    return (it1 == last1) && (it2 != last2);
+}
+
+template<class Key, class T, class Compare, class Alloc>
+bool operator<=(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+                const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    return !(rhs < lhs);
+}
+
+template<class Key, class T, class Compare, class Alloc>
+bool operator>(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+               const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    return rhs < lhs;
+}
+
+template<class Key, class T, class Compare, class Alloc>
+bool operator>=(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
+                const bushy::splay_map<Key,T,Compare,Alloc>& rhs)
+{
+    return !(lhs < rhs);
+}
 
 namespace std
 {
