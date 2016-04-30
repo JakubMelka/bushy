@@ -333,27 +333,32 @@ public:
         insert(other.cbegin(), other.cend());
     }
 
-    // TODO: Fix this code!
-    /*
     splay_map(splay_map&& other) :
-        root{&root, &root, &root},
-        comp(std::move(other.comp)),
-        alloc(std::move(other.alloc)),
-        size(other.size())
+        _root{&_root, &_root, &_root},
+        _comp(std::move(other._comp)),
+        _alloc(std::move(other._alloc)),
+        _size(other._size)
     {
-        std::swap(root, other.root);
-        other.size = 0;
+        other._replant(&_root);
     }
 
     splay_map(splay_map&& other, const Allocator& alloc) :
-        root{&root, &root, &root},
-        comp(std::move(other.comp)),
-        alloc(alloc),
-        size(other.size())
+        _root{&_root, &_root, &_root},
+        _comp(other._comp),
+        _alloc(_alloc),
+        _size(0)
     {
-        std::swap(root, other.root);
-        other.size = 0;
-    }*/
+        if (alloc != other.get_allocator())
+        {
+            // Allocator are not equal, use copy semantics
+            insert(other.cbegin(), other.cend());
+        }
+        else
+        {
+            _size = other._size;
+            other._replant(&_root);
+        }
+    }
 
     splay_map(std::initializer_list<value_type> init, const Compare& comp = Compare(), const Allocator& alloc = Allocator()) :
         splay_map(comp, alloc)
@@ -374,6 +379,12 @@ public:
 
     splay_map& operator=(const splay_map& other)
     {
+        // Check, if we are assigning from this map
+        if (&other == this)
+        {
+            return *this;
+        }
+
         // First, clear the old data using old allocator
         clear();
 
@@ -387,8 +398,38 @@ public:
         return *this;
     }
 
-    // TODO: Fix this code!
-    /*splay_map& operator=(splay_map&& other);*/
+    splay_map& operator=(splay_map&& other)
+    {
+        // Check, if we are assigning from this map
+        if (&other == this)
+        {
+            return *this;
+        }
+
+        // First clear the map
+        clear();
+
+        if (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment())
+        {
+            _alloc = other._alloc;
+
+            // Move the data
+            _size = other._size;
+            other._replant(&_root);
+        }
+        else if (!(_alloc != other.get_allocator()))
+        {
+            // Allocators are equal, we can move the data
+            _size = other._size;
+            other._replant(&_root);
+        }
+        else
+        {
+            insert(other.cbegin(), other.cend());
+        }
+
+        return *this;
+    }
 
     splay_map& operator=(std::initializer_list<value_type> ilist)
     {
@@ -630,7 +671,12 @@ public:
         }
     }
 
-    void swap( splay_map& other );
+    void swap(splay_map& other)
+    {
+        splay_map temp(std::move(other));
+        other = std::move(*this);
+        *this = std::move(temp);
+    }
 
     // Lookup
 
@@ -935,6 +981,42 @@ private:
         _root.parent = &_root;
         _root.left = &_root;
         _root.right = &_root;
+    }
+
+    // Replants the tree (moves tree to a new root)
+    void _replant(base_node* new_root)
+    {
+        base_node* current = _root.left;
+        while (current != &_root)
+        {
+            base_node* new_current = _next(current);
+
+            // Replace "null" pointers
+            if (current->left == &_root)
+            {
+                current->left = new_root;
+            }
+            if (current->right == &_root)
+            {
+                current->right = new_root;
+            }
+
+            current = new_current;
+        }
+
+        // Replace root
+        *new_root = _root;
+
+        if (_root.parent != &_root)
+        {
+            _root.parent->parent = new_root;
+        }
+
+        // Empty the current tree
+        _root.parent = &_root;
+        _root.left = &_root;
+        _root.right = &_root;
+        _size = 0;
     }
 
     // Finds the next node in the tree
@@ -1958,19 +2040,19 @@ namespace std
 {
 
 template<class Key, class T, class Compare, class Alloc, class Policy>
-void swap(bushy::splay_map<Key, T, Compare, Alloc, Policy>& lhs, bushy::splay_map<Key, T, Compare, Alloc, Policy>& rhs )
+void swap(bushy::splay_map<Key, T, Compare, Alloc, Policy>& lhs, bushy::splay_map<Key, T, Compare, Alloc, Policy>& rhs)
 {
     lhs.swap(rhs);
 }
 
 template<class Key, class T, class Compare, class Alloc, class Policy>
-void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& rhs )
+void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::iterator& rhs)
 {
     lhs.swap(rhs);
 }
 
 template<class Key, class T, class Compare, class Alloc, class Policy>
-void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& rhs )
+void swap(typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& lhs, typename bushy::splay_map<Key, T, Compare, Alloc, Policy>::const_iterator& rhs)
 {
     lhs.swap(rhs);
 }

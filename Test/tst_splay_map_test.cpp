@@ -121,6 +121,26 @@ void splay_map_test::testConstructors()
     }
 
     {
+        // Move constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend());
+        TestMap testMap(std::move(other));
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
+        std::allocator<std::pair<int, char>> allocator;
+
+        // Move constructor
+        StandardMap standardMap = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+        TestMap other(standardMap.cbegin(), standardMap.cend(), allocator);
+        TestMap testMap(std::move(other), allocator);
+
+        test_map_equality<TestMap, StandardMap>(testMap, standardMap);
+    }
+
+    {
         // Initializer list constructor
         StandardMap standardMap({ {1, 'a'}, {2, 'b'}, {3, 'c'} });
         TestMap testMap({ {1, 'a'}, {2, 'b'}, {3, 'c'} });
