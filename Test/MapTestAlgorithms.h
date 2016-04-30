@@ -39,4 +39,19 @@ void test_map_equality(const Map1& map1, const Map2& map2)
     QVERIFY(is_range_equals(map1.crbegin(), map1.crend(), map2.crbegin(), map2.crend()));
 }
 
+template<typename Iterator1, typename Iterator2>
+void test_operation_result_equal(const std::pair<Iterator1, bool>& left, const std::pair<Iterator2, bool>& right)
+{
+    QVERIFY(left.second == right.second);
+    QVERIFY(*left.first == *right.first);
+}
+
+template<typename Iterator1, typename Iterator2>
+void test_iterator_equal(Iterator1 left, Iterator2 right)
+{
+    QVERIFY(*left == *right);
+    QVERIFY(left->first == right->first);
+    QVERIFY(left->second == right->second);
+}
+
 #endif // MAPTESTALGORITHMS_H

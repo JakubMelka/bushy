@@ -535,7 +535,7 @@ public:
     }
 
     template<class P>
-    std::pair<iterator, bool> insert(P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type = int())
+    typename std::enable_if<std::template is_constructible<value_type, P&&>::value, std::pair<iterator, bool>>::type insert(P&& value)
     {
         return emplace(std::forward<P>(value));
     }
@@ -551,10 +551,10 @@ public:
     }
 
     template<class P>
-    iterator insert(const_iterator hint, P&& value, typename std::enable_if<std::template is_constructible<value_type, P&&>::value, int>::type = int())
+    typename std::enable_if<std::template is_constructible<value_type, P&&>::value, iterator>::type insert(const_iterator hint, P&& value)
     {
         // Use emplace hint function
-        return emplace_hint(hint, std::move(value));
+        return emplace_hint(hint, std::forward<P>(value));
     }
 
     iterator insert(const_iterator hint, value_type&& value)
@@ -1236,7 +1236,7 @@ private:
         if (empty())
         {
             // Map is empty, we must create a node
-            base_node* single_node = _buy_node(std::forward(key), mapped_type());
+            base_node* single_node = _buy_node(std::forward<K>(key), mapped_type());
 
             _root.left = single_node;
             _root.right = single_node;
@@ -1259,7 +1259,7 @@ private:
             if (found == &_root)
             {
                 // Key is not in the map, insert it
-                base_node* new_node = _buy_node(std::forward(key), mapped_type());
+                base_node* new_node = _buy_node(std::forward<K>(key), mapped_type());
 
                 // Insert the node and splay it, if necessary
                 _insert_node_and_splay(new_node, parent, _comp(parent->asNode()->value.first, new_node->asNode()->value.first));
