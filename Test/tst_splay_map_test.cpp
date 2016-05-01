@@ -24,7 +24,9 @@ private Q_SLOTS:
     void testIterators();
     void testAssignOperators();
     void testAccessOperators();
-    void testInsertAndEmplaceOperations();
+    void testInsertOperations();
+    void testInsertOrAssignOperations();
+    void testTryEmplace();
     void testMiscellanneousOperations();
 };
 
@@ -389,7 +391,7 @@ void splay_map_test::testAccessOperators()
         bool exception_thrown = false;
         try
         {
-            standard_map.at(4);
+            test_map.at(4);
         }
         catch (std::out_of_range)
         {
@@ -422,7 +424,7 @@ void splay_map_test::testAccessOperators()
     }
 }
 
-void splay_map_test::testInsertAndEmplaceOperations()
+void splay_map_test::testInsertOperations()
 {
     {
         using TestMap = bushy::splay_map<int, char>;
@@ -724,6 +726,420 @@ void splay_map_test::testInsertAndEmplaceOperations()
             test_iterator_equal(i6l, i6r);
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
+    }
+}
+
+void splay_map_test::testInsertOrAssignOperations()
+{
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        const key_type& firstKeyRef = firstKey;
+        const key_type& secondKeyRef = secondKey;
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.insert_or_assign(firstKeyRef, firstValue);
+        auto i1r = test_map.insert_or_assign(firstKeyRef, firstValue);
+        test_operation_result_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.insert_or_assign(firstKeyRef, firstValue);
+        auto i2r = test_map.insert_or_assign(firstKeyRef, firstValue);
+        test_operation_result_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.insert_or_assign(firstKeyRef, firstValue);
+        auto i3r = test_map.insert_or_assign(firstKeyRef, firstValue);
+        test_operation_result_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.insert_or_assign(secondKeyRef, secondValue);
+        auto i4r = test_map.insert_or_assign(secondKeyRef, secondValue);
+        test_operation_result_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.insert_or_assign(secondKeyRef, secondValue);
+        auto i5r = test_map.insert_or_assign(secondKeyRef, secondValue);
+        test_operation_result_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.insert_or_assign(secondKeyRef, secondValue);
+        auto i6r = test_map.insert_or_assign(secondKeyRef, secondValue);
+        test_operation_result_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        key_type&& firstKeyRef = std::move(firstKey);
+        key_type&& secondKeyRef = std::move(secondKey);
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        auto i1r = test_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        auto i2r = test_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        auto i3r = test_map.insert_or_assign(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        auto i4r = test_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        auto i5r = test_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        auto i6r = test_map.insert_or_assign(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        const key_type& firstKeyRef = firstKey;
+        const key_type& secondKeyRef = secondKey;
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
+        auto i1r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
+        auto i2r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
+        auto i3r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
+        auto i4r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
+        auto i5r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
+        auto i6r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        key_type&& firstKeyRef = std::move(firstKey);
+        key_type&& secondKeyRef = std::move(secondKey);
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i1r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i2r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i3r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i4r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i5r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i6r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+}
+
+void splay_map_test::testTryEmplace()
+{
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        const key_type& firstKeyRef = firstKey;
+        const key_type& secondKeyRef = secondKey;
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.try_emplace(firstKeyRef, firstValue);
+        auto i1r = test_map.try_emplace(firstKeyRef, firstValue);
+        test_operation_result_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.try_emplace(firstKeyRef, firstValue);
+        auto i2r = test_map.try_emplace(firstKeyRef, firstValue);
+        test_operation_result_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.try_emplace(firstKeyRef, firstValue);
+        auto i3r = test_map.try_emplace(firstKeyRef, firstValue);
+        test_operation_result_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.try_emplace(secondKeyRef, secondValue);
+        auto i4r = test_map.try_emplace(secondKeyRef, secondValue);
+        test_operation_result_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.try_emplace(secondKeyRef, secondValue);
+        auto i5r = test_map.try_emplace(secondKeyRef, secondValue);
+        test_operation_result_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.try_emplace(secondKeyRef, secondValue);
+        auto i6r = test_map.try_emplace(secondKeyRef, secondValue);
+        test_operation_result_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        key_type&& firstKeyRef = std::move(firstKey);
+        key_type&& secondKeyRef = std::move(secondKey);
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.try_emplace(std::move(firstKeyRef), firstValue);
+        auto i1r = test_map.try_emplace(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.try_emplace(std::move(firstKeyRef), firstValue);
+        auto i2r = test_map.try_emplace(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.try_emplace(std::move(firstKeyRef), firstValue);
+        auto i3r = test_map.try_emplace(std::move(firstKeyRef), firstValue);
+        test_operation_result_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.try_emplace(std::move(secondKeyRef), secondValue);
+        auto i4r = test_map.try_emplace(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.try_emplace(std::move(secondKeyRef), secondValue);
+        auto i5r = test_map.try_emplace(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.try_emplace(std::move(secondKeyRef), secondValue);
+        auto i6r = test_map.try_emplace(std::move(secondKeyRef), secondValue);
+        test_operation_result_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        const key_type& firstKeyRef = firstKey;
+        const key_type& secondKeyRef = secondKey;
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
+        auto i1r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
+        auto i2r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
+        auto i3r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
+        test_iterator_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
+        auto i4r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
+        auto i5r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
+        auto i6r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
+        test_iterator_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using key_type = int;
+        using mapped_type = char;
+
+        key_type firstKey = 1;
+        key_type secondKey = 2;
+
+        key_type&& firstKeyRef = std::move(firstKey);
+        key_type&& secondKeyRef = std::move(secondKey);
+
+        mapped_type firstValue = 'a';
+        mapped_type secondValue = 'b';
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i1r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i2r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        firstValue = 'c';
+        auto i3l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
+        auto i3r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
+        test_iterator_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i4r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i5r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        secondValue = 'q';
+        auto i6l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
+        auto i6r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
+        test_iterator_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 }
 

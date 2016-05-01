@@ -27,6 +27,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <type_traits>
+#include <limits>
 
 namespace bushy
 {
@@ -583,25 +584,25 @@ public:
     template<class M>
     std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj)
     {
-        return _insert_or_assign_hint(const_iterator(), false, k, std::forward(obj));
+        return _insert_or_assign_hint(const_iterator(), false, k, std::forward<M>(obj));
     }
 
     template<class M>
     std::pair<iterator, bool> insert_or_assign(key_type&& k, M&& obj)
     {
-        return _insert_or_assign_hint(const_iterator(), false, std::move(k), std::forward(obj));
+        return _insert_or_assign_hint(const_iterator(), false, std::move(k), std::forward<M>(obj));
     }
 
     template<class M>
     iterator insert_or_assign(const_iterator hint, const key_type& k, M&& obj)
     {
-        return _insert_or_assign_hint(hint, true, k, std::forward(obj)).first;
+        return _insert_or_assign_hint(hint, true, k, std::forward<M>(obj)).first;
     }
 
     template<class M>
     iterator insert_or_assign(const_iterator hint, key_type&& k, M&& obj)
     {
-        return _insert_or_assign_hint(hint, true, std::move(k), std::forward(obj)).first;
+        return _insert_or_assign_hint(hint, true, std::move(k), std::forward<M>(obj)).first;
     }
 
     template<class... Args>
@@ -619,25 +620,25 @@ public:
     template<class... Args>
     std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args)
     {
-        return _try_emplace_hint(const_iterator(), false, k, std::forward(args)...);
+        return _try_emplace_hint(const_iterator(), false, k, std::forward<Args>(args)...);
     }
 
     template<class... Args>
     std::pair<iterator, bool> try_emplace(key_type&& k, Args&&... args)
     {
-        return _try_emplace_hint(const_iterator(), false, std::move(k), std::forward(args)...);
+        return _try_emplace_hint(const_iterator(), false, std::move(k), std::forward<Args>(args)...);
     }
 
     template<class... Args>
     iterator try_emplace(const_iterator hint, const key_type& k, Args&&... args)
     {
-        return _try_emplace_hint(hint, true, k, std::forward(args)...).first;
+        return _try_emplace_hint(hint, true, k, std::forward<Args>(args)...).first;
     }
 
     template<class... Args>
     iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args)
     {
-        return _try_emplace_hint(hint, true, std::move(k), std::forward(args)...).first;
+        return _try_emplace_hint(hint, true, std::move(k), std::forward<Args>(args)...).first;
     }
 
     iterator erase(const_iterator pos)
@@ -686,7 +687,7 @@ public:
     }
 
     template<class K>
-    size_type count(const K& x) const
+    size_type count(const K& key) const
     {
         return (_find<K>(key) != &_root) ? 1 : 0;
     }
@@ -702,13 +703,13 @@ public:
     }
 
     template<class K>
-    iterator find(const K& x)
+    iterator find(const K& key)
     {
         return iterator(_find<K>(key), this);
     }
 
     template<class K>
-    const_iterator find(const K& x) const
+    const_iterator find(const K& key) const
     {
         return const_iterator(_find<K>(key), this);
     }
@@ -724,13 +725,13 @@ public:
     }
 
     template<class K>
-    std::pair<iterator, iterator> equal_range(const K& x)
+    std::pair<iterator, iterator> equal_range(const K& key)
     {
         return std::make_pair(lower_bound<K>(key), upper_bound<K>(key));
     }
 
     template<class K>
-    std::pair<const_iterator, const_iterator> equal_range(const K& x) const
+    std::pair<const_iterator, const_iterator> equal_range(const K& key) const
     {
         return std::make_pair(lower_bound<K>(key), upper_bound<K>(key));
     }
@@ -746,13 +747,13 @@ public:
     }
 
     template<class K>
-    iterator lower_bound(const K& x)
+    iterator lower_bound(const K& key)
     {
         return iterator(_lower_bound<K>(key), this);
     }
 
     template<class K>
-    const_iterator lower_bound(const K& x) const
+    const_iterator lower_bound(const K& key) const
     {
         return const_iterator(_lower_bound<K>(key), this);
     }
@@ -768,13 +769,13 @@ public:
     }
 
     template<class K>
-    iterator upper_bound(const K& x)
+    iterator upper_bound(const K& key)
     {
         return iterator(_upper_bound<K>(key), this);
     }
 
     template<class K>
-    const_iterator upper_bound(const K& x) const
+    const_iterator upper_bound(const K& key) const
     {
         return const_iterator(_upper_bound<K>(key), this);
     }
@@ -1427,13 +1428,13 @@ private:
     }
 
     // Tries to emplace a new node
-    template<typename Key, typename... Args>
-    std::pair<iterator, bool> _try_emplace_hint(const_iterator hint, bool use_hint, Key&& key, Args&&... args)
+    template<typename KeyType, typename... Args>
+    std::pair<iterator, bool> _try_emplace_hint(const_iterator hint, bool use_hint, KeyType&& key, Args&&... args)
     {
         if (empty())
         {
             // Map is empty - it is easy case, just create a new node.
-            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward<KeyType>(key)), std::forward_as_tuple(std::forward<Args>(args)...));
 
             _root.left = node;
             _root.right = node;
@@ -1484,7 +1485,7 @@ private:
                 }
 
                 // Create a new node
-                base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+                base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward<KeyType>(key)), std::forward_as_tuple(std::forward<Args>(args)...));
 
                 // Insert the node and splay it, if necessary
                 _insert_node_and_splay(node, parent, right_child);
@@ -1496,12 +1497,12 @@ private:
         // The hint was useless (or we did not receive the hint...), perform
         // standard search and insertion algorithm.
         base_node* parent;
-        base_node* found = _search_for_insert_hint(value.first, &parent);
+        base_node* found = _search_for_insert_hint(key, &parent);
 
         if (found == &_root)
         {
             // Create a new node
-            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward(key)), std::forward_as_tuple(std::forward(args)...));
+            base_node* node = _buy_node(std::piecewise_construct, std::forward_as_tuple(std::forward<KeyType>(key)), std::forward_as_tuple(std::forward<Args>(args)...));
 
             // Insert the node and splay it, if necessary
             _insert_node_and_splay(node, parent, _comp(parent->asNode()->value.first, node->asNode()->value.first));
@@ -1523,13 +1524,13 @@ private:
 
     // Inserts a new node (with hint or with no hint), or assigns
     // a new value to the map item.
-    template<typename Key, typename Value>
-    std::pair<iterator, bool> _insert_or_assign_hint(const_iterator hint, bool use_hint, Key&& key, Value&& value)
+    template<typename KeyType, typename Value>
+    std::pair<iterator, bool> _insert_or_assign_hint(const_iterator hint, bool use_hint, KeyType&& key, Value&& value)
     {
         if (empty())
         {
             // Map is empty - it is easy case, just create a new node.
-            base_node* node = _buy_node(std::forward(key), std::forward(value));
+            base_node* node = _buy_node(std::forward<KeyType>(key), std::forward<Value>(value));
 
             _root.left = node;
             _root.right = node;
@@ -1580,7 +1581,7 @@ private:
                 }
 
                 // Create a new node
-                base_node* node = _buy_node(std::forward(key), std::forward(value));
+                base_node* node = _buy_node(std::forward<KeyType>(key), std::forward<Value>(value));
 
                 // Insert the node and splay it, if necessary
                 _insert_node_and_splay(node, parent, right_child);
@@ -1592,12 +1593,12 @@ private:
         // The hint was useless (or we did not receive the hint...), perform
         // standard search and insertion algorithm.
         base_node* parent;
-        base_node* found = _search_for_insert_hint(value.first, &parent);
+        base_node* found = _search_for_insert_hint(key, &parent);
 
         if (found == &_root)
         {
             // Create a new node
-            base_node* node = _buy_node(std::forward(key), std::forward(value));
+            base_node* node = _buy_node(std::forward<KeyType>(key), std::forward<Value>(value));
 
             // Insert the node and splay it, if necessary
             _insert_node_and_splay(node, parent, _comp(parent->asNode()->value.first, node->asNode()->value.first));
@@ -1607,7 +1608,7 @@ private:
         else
         {
             // Key is already in the map, we must assign a new value
-            found->asNode()->value->second = std::forward(value);
+            found->asNode()->value.second = std::forward<Value>(value);
 
             // Find mode - splay the node
             if (_policy.find_policy.splay_hint())
@@ -1996,7 +1997,7 @@ bool operator<(const bushy::splay_map<Key,T,Compare,Alloc>& lhs,
     auto last1 = lhs.cend();
     auto last2 = rhs.cend();
 
-    bushy::splay_map<Key,T,Compare,Alloc>::value_compare comp = lhs.value_comp();
+    typename bushy::splay_map<Key,T,Compare,Alloc>::value_compare comp = lhs.value_comp();
 
     for (; (it1 != last1) && (it2 != last2); ++it1, ++it2)
     {

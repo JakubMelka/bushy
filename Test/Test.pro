@@ -20,24 +20,20 @@ DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 DESTDIR = $$OUT_PWD/..
 
+win32-g++: message(win32-g++)
+win32-msvc2015: message(win32-msvc2015)
+
+win32-msvc2015 {
+
 CONFIG(debug, debug|release) {
-
-win32-msvc
-{
     QMAKE_CXXFLAGS += -D_USE_MATH_DEFINES /arch:AVX /W3 -DDEBUG
-}
-
 } else {
-
-win32-msvc
-{
     QMAKE_CXXFLAGS += -FAs -D_USE_MATH_DEFINES /O2 /arch:AVX /W3
-}
-
 } #config
 
-win32-msvc
-{
+} #win32-msvc2015
+
+win32-msvc2015 {
     QMAKE_CXXFLAGS += -FAs
 }
 
