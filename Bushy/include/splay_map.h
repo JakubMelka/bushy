@@ -1158,6 +1158,8 @@ private:
         }
         else
         {
+            base_node* old_right_child = node->right;
+
             // We have two children. Heuristic: move right child to the root,
             // if we are deleting range, it will be already splayed.
             // First thing we must do, is remove parent-child link.
@@ -1173,9 +1175,15 @@ private:
             }
 
             next->left = node->left;
-            next->right = node->right;
             next->parent = &_root;
             _root.parent = next;
+            next->left->parent = next;
+
+            if (next != old_right_child)
+            {
+                next->right = old_right_child;
+                next->right->parent = next;
+            }
         }
 
         // Delete the deleted node

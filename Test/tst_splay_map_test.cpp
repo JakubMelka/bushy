@@ -26,7 +26,9 @@ private Q_SLOTS:
     void testAccessOperators();
     void testInsertOperations();
     void testInsertOrAssignOperations();
+    void testEmplace();
     void testTryEmplace();
+    void testErase();
     void testMiscellanneousOperations();
 };
 
@@ -936,6 +938,116 @@ void splay_map_test::testInsertOrAssignOperations()
     }
 }
 
+void splay_map_test::testEmplace()
+{
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using value_type = std::pair<const int, char>;
+
+        value_type first(1, 'a');
+        value_type second(2, 'b');
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        auto i1l = standard_map.emplace(first);
+        auto i1r = test_map.emplace(first);
+        test_operation_result_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = standard_map.emplace(first);
+        auto i2r = test_map.emplace(first);
+        test_operation_result_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        first.second = 'c';
+        auto i3l = standard_map.emplace(first);
+        auto i3r = test_map.emplace(first);
+        test_operation_result_equal(i3l, i3r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i4l = standard_map.emplace(second);
+        auto i4r = test_map.emplace(second);
+        test_operation_result_equal(i4l, i4r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i5l = standard_map.emplace(second);
+        auto i5r = test_map.emplace(second);
+        test_operation_result_equal(i5l, i5r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        second.second = 'q';
+        auto i6l = standard_map.emplace(second);
+        auto i6r = test_map.emplace(second);
+        test_operation_result_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+        using value_type = std::pair<const int, char>;
+
+        StandardMap standard_map;
+        TestMap test_map;
+
+        {
+            value_type first(1, 'a');
+            value_type second(first);
+            auto i1l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i1r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i1l, i1r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+
+        {
+            value_type first(1, 'a');
+            value_type second(first);
+            auto i2l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i2r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i2l, i2r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+
+        {
+            value_type first(1, 'c');
+            value_type second(first);
+            auto i3l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i3r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i3l, i3r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+
+        {
+            value_type first(2, 'b');
+            value_type second(first);
+            auto i4l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i4r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i4l, i4r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+
+        {
+            value_type first(2, 'b');
+            value_type second(first);
+            auto i5l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i5r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i5l, i5r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+
+        {
+            value_type first(2, 'q');
+            value_type second(first);
+            auto i6l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
+            auto i6r = test_map.emplace_hint(test_map.cend(), std::move(second));
+            test_iterator_equal(i6l, i6r);
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
+    }
+}
+
 void splay_map_test::testTryEmplace()
 {
     {
@@ -1139,6 +1251,103 @@ void splay_map_test::testTryEmplace()
         auto i6l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i6r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
         test_iterator_equal(i6l, i6r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+}
+
+void splay_map_test::testErase()
+{
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap::const_iterator it1 = test_map.find(3);
+        TestMap::const_iterator it2 = test_map.find(5);
+        StandardMap::const_iterator its1 = standard_map.find(3);
+        StandardMap::const_iterator its2 = standard_map.find(5);
+
+        auto i1l = test_map.erase(it1);
+        auto i1r = standard_map.erase(its1);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = test_map.erase(it2);
+        auto i2r = standard_map.erase(its2);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        test_map.clear();
+        standard_map.clear();
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap::iterator it1 = test_map.find(3);
+        TestMap::iterator it2 = test_map.find(5);
+        StandardMap::iterator its1 = standard_map.find(3);
+        StandardMap::iterator its2 = standard_map.find(5);
+
+        auto i1l = test_map.erase(it1);
+        auto i1r = standard_map.erase(its1);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2l = test_map.erase(it2);
+        auto i2r = standard_map.erase(its2);
+        test_iterator_equal(i2l, i2r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        test_map.clear();
+        standard_map.clear();
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap::iterator it1 = test_map.find(3);
+        TestMap::iterator it2 = test_map.find(6);
+        StandardMap::iterator its1 = standard_map.find(3);
+        StandardMap::iterator its2 = standard_map.find(6);
+
+        auto i1l = test_map.erase(it1, it2);
+        auto i1r = standard_map.erase(its1, its2);
+        test_iterator_equal(i1l, i1r);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        test_map.clear();
+        standard_map.clear();
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        QVERIFY(test_map.erase(3) == standard_map.erase(3));
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        QVERIFY(test_map.erase(5) == standard_map.erase(5));
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        test_map.clear();
+        standard_map.clear();
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 }
