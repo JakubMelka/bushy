@@ -592,34 +592,34 @@ void splay_map_test::testInsertOperations()
 
         auto i1l = standard_map.insert(standard_map.cend(), first);
         auto i1r = test_map.insert(test_map.cend(), first);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.insert(standard_map.cend(), first);
         auto i2r = test_map.insert(test_map.cend(), first);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         first.second = 'c';
         auto i3l = standard_map.insert(standard_map.cend(), first);
         auto i3r = test_map.insert(test_map.cend(), first);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.insert(standard_map.cend(), second);
         auto i4r = test_map.insert(test_map.cend(), second);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.insert(standard_map.cend(), second);
         auto i5r = test_map.insert(test_map.cend(), second);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         second.second = 'q';
         auto i6l = standard_map.insert(standard_map.cend(), second);
         auto i6r = test_map.insert(test_map.cend(), second);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 
@@ -636,34 +636,34 @@ void splay_map_test::testInsertOperations()
 
         auto i1l = standard_map.insert(standard_map.cend(), first);
         auto i1r = test_map.insert<const value_type&>(test_map.cend(), first);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.insert(standard_map.cend(), first);
         auto i2r = test_map.insert<const value_type&>(test_map.cend(), first);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         first.second = 'c';
         auto i3l = standard_map.insert(standard_map.cend(), first);
         auto i3r = test_map.insert<const value_type&>(test_map.cend(), first);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.insert(standard_map.cend(), second);
         auto i4r = test_map.insert<const value_type&>(test_map.cend(), second);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.insert(standard_map.cend(), second);
         auto i5r = test_map.insert<const value_type&>(test_map.cend(), second);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         second.second = 'q';
         auto i6l = standard_map.insert(standard_map.cend(), second);
         auto i6r = test_map.insert<const value_type&>(test_map.cend(), second);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 
@@ -680,7 +680,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i1l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i1r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i1l, i1r);
+            test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -689,7 +689,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i2l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i2r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i2l, i2r);
+            test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -698,7 +698,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i3l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i3r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i3l, i3r);
+            test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -707,7 +707,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i4l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i4r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i4l, i4r);
+            test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -716,7 +716,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i5l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i5r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i5l, i5r);
+            test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -725,7 +725,7 @@ void splay_map_test::testInsertOperations()
             value_type second(first);
             auto i6l = standard_map.insert(standard_map.cend(), std::move(first));
             auto i6r = test_map.insert(test_map.cend(), std::move(second));
-            test_iterator_equal(i6l, i6r);
+            test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
     }
@@ -855,34 +855,34 @@ void splay_map_test::testInsertOrAssignOperations()
 
         auto i1l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
         auto i1r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
         auto i2r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         firstValue = 'c';
         auto i3l = standard_map.insert_or_assign(standard_map.cend(), firstKeyRef, firstValue);
         auto i3r = test_map.insert_or_assign(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
         auto i4r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
         auto i5r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         secondValue = 'q';
         auto i6l = standard_map.insert_or_assign(standard_map.cend(), secondKeyRef, secondValue);
         auto i6r = test_map.insert_or_assign(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 
@@ -906,34 +906,34 @@ void splay_map_test::testInsertOrAssignOperations()
 
         auto i1l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i1r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i2r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         firstValue = 'c';
         auto i3l = standard_map.insert_or_assign(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i3r = test_map.insert_or_assign(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i4r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i5r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         secondValue = 'q';
         auto i6l = standard_map.insert_or_assign(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i6r = test_map.insert_or_assign(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 }
@@ -997,7 +997,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i1l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i1r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i1l, i1r);
+            test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -1006,7 +1006,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i2l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i2r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i2l, i2r);
+            test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -1015,7 +1015,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i3l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i3r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i3l, i3r);
+            test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -1024,7 +1024,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i4l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i4r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i4l, i4r);
+            test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -1033,7 +1033,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i5l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i5r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i5l, i5r);
+            test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
 
@@ -1042,7 +1042,7 @@ void splay_map_test::testEmplace()
             value_type second(first);
             auto i6l = standard_map.emplace_hint(standard_map.cend(), std::move(first));
             auto i6r = test_map.emplace_hint(test_map.cend(), std::move(second));
-            test_iterator_equal(i6l, i6r);
+            test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
             test_map_equality<TestMap, StandardMap>(test_map, standard_map);
         }
     }
@@ -1172,34 +1172,34 @@ void splay_map_test::testTryEmplace()
 
         auto i1l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
         auto i1r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
         auto i2r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         firstValue = 'c';
         auto i3l = standard_map.try_emplace(standard_map.cend(), firstKeyRef, firstValue);
         auto i3r = test_map.try_emplace(test_map.cend(), firstKeyRef, firstValue);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
         auto i4r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
         auto i5r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         secondValue = 'q';
         auto i6l = standard_map.try_emplace(standard_map.cend(), secondKeyRef, secondValue);
         auto i6r = test_map.try_emplace(test_map.cend(), secondKeyRef, secondValue);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 
@@ -1223,34 +1223,34 @@ void splay_map_test::testTryEmplace()
 
         auto i1l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i1r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i1l, i1r);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i2l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i2r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i2l, i2r);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         firstValue = 'c';
         auto i3l = standard_map.try_emplace(standard_map.cend(), std::move(firstKeyRef), firstValue);
         auto i3r = test_map.try_emplace(test_map.cend(), std::move(firstKeyRef), firstValue);
-        test_iterator_equal(i3l, i3r);
+        test_iterator_equal(i3l, i3r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i4l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i4r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i4l, i4r);
+        test_iterator_equal(i4l, i4r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         auto i5l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i5r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i5l, i5r);
+        test_iterator_equal(i5l, i5r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         secondValue = 'q';
         auto i6l = standard_map.try_emplace(standard_map.cend(), std::move(secondKeyRef), secondValue);
         auto i6r = test_map.try_emplace(test_map.cend(), std::move(secondKeyRef), secondValue);
-        test_iterator_equal(i6l, i6r);
+        test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
 }
@@ -1269,14 +1269,41 @@ void splay_map_test::testErase()
         StandardMap::const_iterator its1 = standard_map.find(3);
         StandardMap::const_iterator its2 = standard_map.find(5);
 
-        auto i1l = test_map.erase(it1);
-        auto i1r = standard_map.erase(its1);
-        test_iterator_equal(i1l, i1r);
+        auto i1r = test_map.erase(it1);
+        auto i1l = standard_map.erase(its1);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
-        auto i2l = test_map.erase(it2);
-        auto i2r = standard_map.erase(its2);
-        test_iterator_equal(i2l, i2r);
+        auto i2r = test_map.erase(it2);
+        auto i2l = standard_map.erase(its2);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        test_map.clear();
+        standard_map.clear();
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap::const_iterator it1 = test_map.find(6);
+        TestMap::const_iterator it2 = test_map.find(5);
+        StandardMap::const_iterator its1 = standard_map.find(6);
+        StandardMap::const_iterator its2 = standard_map.find(5);
+
+        auto i1r = test_map.erase(it1);
+        auto i1l = standard_map.erase(its1);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        auto i2r = test_map.erase(it2);
+        auto i2l = standard_map.erase(its2);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         test_map.clear();
@@ -1296,14 +1323,14 @@ void splay_map_test::testErase()
         StandardMap::iterator its1 = standard_map.find(3);
         StandardMap::iterator its2 = standard_map.find(5);
 
-        auto i1l = test_map.erase(it1);
-        auto i1r = standard_map.erase(its1);
-        test_iterator_equal(i1l, i1r);
+        auto i1r = test_map.erase(it1);
+        auto i1l = standard_map.erase(its1);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
-        auto i2l = test_map.erase(it2);
-        auto i2r = standard_map.erase(its2);
-        test_iterator_equal(i2l, i2r);
+        auto i2r = test_map.erase(it2);
+        auto i2l = standard_map.erase(its2);
+        test_iterator_equal(i2l, i2r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         test_map.clear();
@@ -1323,9 +1350,9 @@ void splay_map_test::testErase()
         StandardMap::iterator its1 = standard_map.find(3);
         StandardMap::iterator its2 = standard_map.find(6);
 
-        auto i1l = test_map.erase(it1, it2);
-        auto i1r = standard_map.erase(its1, its2);
-        test_iterator_equal(i1l, i1r);
+        auto i1r = test_map.erase(it1, it2);
+        auto i1l = standard_map.erase(its1, its2);
+        test_iterator_equal(i1l, i1r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
 
         test_map.clear();
@@ -1349,6 +1376,34 @@ void splay_map_test::testErase()
         test_map.clear();
         standard_map.clear();
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        std::vector<int> values(100);
+        std::iota(values.begin(), values.end(), 0);
+        std::random_shuffle(values.begin(), values.end());
+
+        using TestMap = bushy::splay_map<int, int>;
+        using StandardMap = std::map<int, int>;
+
+        TestMap test_map;
+        StandardMap standard_map;
+
+        for (const int value : values)
+        {
+            test_map.insert(std::make_pair(value, value * 37));
+            standard_map.insert(std::make_pair(value, value * 37));
+        }
+
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+
+        std::random_shuffle(values.begin(), values.end());
+
+        for (const int value : values)
+        {
+            QVERIFY(test_map.erase(value) == standard_map.erase(value));
+            test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+        }
     }
 }
 

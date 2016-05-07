@@ -46,12 +46,19 @@ void test_operation_result_equal(const std::pair<Iterator1, bool>& left, const s
     QVERIFY(*left.first == *right.first);
 }
 
-template<typename Iterator1, typename Iterator2>
-void test_iterator_equal(Iterator1 left, Iterator2 right)
+template<typename Iterator1, typename Iterator2, typename Iterator3, typename Iterator4>
+void test_iterator_equal(Iterator1 left, Iterator2 right, Iterator3 leftEnd, Iterator4 rightEnd)
 {
-    QVERIFY(*left == *right);
-    QVERIFY(left->first == right->first);
-    QVERIFY(left->second == right->second);
+    const bool leftValid = left != leftEnd;
+    const bool rightValid = right != rightEnd;
+    QVERIFY(leftValid == rightValid);
+
+    if (leftValid && rightValid)
+    {
+        QVERIFY(*left == *right);
+        QVERIFY(left->first == right->first);
+        QVERIFY(left->second == right->second);
+    }
 }
 
 #endif // MAPTESTALGORITHMS_H
