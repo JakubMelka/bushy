@@ -2,6 +2,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += \
     Bushy \
-    Test
+    Test \
+    Benchmark
 
 Test.depends = Bushy

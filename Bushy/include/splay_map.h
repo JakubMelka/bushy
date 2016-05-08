@@ -1977,6 +1977,12 @@ private:
     Policy _policy;
 };
 
+template<typename Key,
+         typename T,
+         typename Compare = std::less<Key>,
+         typename Allocator = std::allocator<std::pair<const Key, T>>>
+using splay_classic_map = splay_map<Key, T, Compare, Allocator, splay_map_policy<splay_mode::NEVER, splay_mode::ALWAYS>>;
+
 }   // namespace bushy
 
 template<class Key, class T, class Compare, class Alloc>
