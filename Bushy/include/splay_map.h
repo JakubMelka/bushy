@@ -1158,31 +1158,47 @@ private:
         }
         else
         {
-            base_node* old_right_child = node->right;
-
             // We have two children. Heuristic: move right child to the root,
             // if we are deleting range, it will be already splayed.
-            // First thing we must do, is remove parent-child link.
-            if (next->parent->left == next)
+            // First thing we must do, is to decide, if the next node is right
+            // child of the node (it is a special case).
+            if (next == node->right)
             {
-                // It is a left child...
-                next->parent->left = &_root;
+                next->left = node->left;
+                next->left->parent = next;
+                next->parent = &_root;
+                _root.parent = next;
             }
             else
             {
-                // it is a right child...
-                next->parent->right = &_root;
-            }
+                // Node isn't the right child of the root. So it cannot have
+                // left subtree, because it is minimal node.
 
-            next->left = node->left;
-            next->parent = &_root;
-            _root.parent = next;
-            next->left->parent = next;
+                // First, detach the right node and attach it to the parent.
+                if (next->parent->left == next)
+                {
+                    // It is a left child...
+                    next->parent->left = next->right;
+                }
+                else
+                {
+                    // It is a right child...
+                    next->parent->right = next->right;
+                }
 
-            if (next != old_right_child)
-            {
-                next->right = old_right_child;
-                next->right->parent = next;
+                if (next->right != &_root)
+                {
+                    // Fix the rights's parent pointer
+                    next->right->parent = next->parent;
+                }
+
+                // We must reconnect the next node to the 'old deleted node' position.
+                next->parent = &_root;
+                _root.parent = next;
+                next->left = node->left;
+                node->left->parent = next;
+                next->right = node->right;
+                node->right->parent = next;
             }
         }
 
