@@ -26,9 +26,9 @@ win32-msvc2015: message(win32-msvc2015)
 win32-msvc2015 {
 
 CONFIG(debug, debug|release) {
-    QMAKE_CXXFLAGS += -D_USE_MATH_DEFINES /arch:AVX /W3 -DDEBUG
+    QMAKE_CXXFLAGS += -D_USE_MATH_DEFINES /arch:AVX /W3 -DDEBUG -DMSVC_COMPILER
 } else {
-    QMAKE_CXXFLAGS += -FAs -D_USE_MATH_DEFINES /O2 /arch:AVX /W3
+    QMAKE_CXXFLAGS += -FAs -D_USE_MATH_DEFINES /O2 /arch:AVX /W3 -DMSVC_COMPILER
 } #config
 
 } #win32-msvc2015

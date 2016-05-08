@@ -289,7 +289,7 @@ public:
         }
 
     protected:
-        inline value_compare(Compare c) : comp(c) { }
+        explicit inline value_compare(Compare c) : comp(c) { }
         Compare comp;
     };
 
@@ -338,7 +338,8 @@ public:
         _root{&_root, &_root, &_root},
         _comp(std::move(other._comp)),
         _alloc(std::move(other._alloc)),
-        _size(other._size)
+        _size(other._size),
+        _policy()
     {
         other._replant(&_root);
     }
@@ -346,8 +347,9 @@ public:
     splay_map(splay_map&& other, const Allocator& alloc) :
         _root{&_root, &_root, &_root},
         _comp(other._comp),
-        _alloc(_alloc),
-        _size(0)
+        _alloc(alloc),
+        _size(0),
+        _policy()
     {
         if (alloc != other.get_allocator())
         {
@@ -389,7 +391,7 @@ public:
         // First, clear the old data using old allocator
         clear();
 
-        if (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment())
+        if (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value)
         {
             // We must propagate the allocator to this object
             _alloc = other._alloc;
@@ -410,7 +412,7 @@ public:
         // First clear the map
         clear();
 
-        if (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment())
+        if (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value)
         {
             _alloc = other._alloc;
 
@@ -1949,7 +1951,7 @@ private:
     struct node : public base_node
     {
         template<typename... Args>
-        node(Args&&... args) : value(std::forward<Args>(args)...) { }
+        explicit node(Args&&... args) : value(std::forward<Args>(args)...) { }
 
         value_type value;
     };

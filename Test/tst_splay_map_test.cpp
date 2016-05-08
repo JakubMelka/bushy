@@ -50,8 +50,6 @@ void splay_map_test::cleanupTestCase()
 
 void splay_map_test::testConstructors()
 {
-    using Compare = std::less<int>;
-    using Allocator = std::allocator<std::pair<const int, char>>;
     using TestMap = bushy::splay_map<int, char>;
     using StandardMap = std::map<int, char>;
 
@@ -733,6 +731,7 @@ void splay_map_test::testInsertOperations()
 
 void splay_map_test::testInsertOrAssignOperations()
 {
+#if defined(MSVC_COMPILER)
     {
         using TestMap = bushy::splay_map<int, char>;
         using StandardMap = std::map<int, char>;
@@ -936,6 +935,7 @@ void splay_map_test::testInsertOrAssignOperations()
         test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
+#endif
 }
 
 void splay_map_test::testEmplace()
@@ -1050,6 +1050,7 @@ void splay_map_test::testEmplace()
 
 void splay_map_test::testTryEmplace()
 {
+#if defined(MSVC_COMPILER)
     {
         using TestMap = bushy::splay_map<int, char>;
         using StandardMap = std::map<int, char>;
@@ -1253,6 +1254,7 @@ void splay_map_test::testTryEmplace()
         test_iterator_equal(i6l, i6r, standard_map.cend(), test_map.cend());
         test_map_equality<TestMap, StandardMap>(test_map, standard_map);
     }
+#endif
 }
 
 void splay_map_test::testErase()

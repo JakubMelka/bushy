@@ -13,7 +13,15 @@ bool is_range_equals(It1 b1, It1 e1, It2 b2, It2 e2)
         return false;
     }
 
-    return std::equal(b1, e1, b2, e2);
+    for (; b1 != e1 && b2 != e2; ++b1, ++b2)
+    {
+        if (!(*b1 == *b2))
+        {
+            return false;
+        }
+    }
+
+    return (b1 == e1) && (b2 == e2);
 }
 
 template<typename Map1, typename Map2>
