@@ -29,6 +29,9 @@ private Q_SLOTS:
     void testEmplace();
     void testTryEmplace();
     void testErase();
+    void testSwap();
+    void testCountFind();
+    void testLowerUpperBounds();
     void testMiscellanneousOperations();
 };
 
@@ -1409,6 +1412,102 @@ void splay_map_test::testErase()
     }
 }
 
+void splay_map_test::testSwap()
+{
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap old_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap test_map;
+        test_map.swap(old_map);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+
+    {
+        using TestMap = bushy::splay_map<int, char>;
+        using StandardMap = std::map<int, char>;
+
+        TestMap old_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+        StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+        TestMap test_map;
+        old_map.swap(test_map);
+        test_map_equality<TestMap, StandardMap>(test_map, standard_map);
+    }
+}
+
+void splay_map_test::testCountFind()
+{
+    using TestMap = bushy::splay_map<int, char>;
+    using StandardMap = std::map<int, char>;
+
+    TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+    StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+    for (int i = -5; i < 10; ++i)
+    {
+        QVERIFY(test_map.count(i) == standard_map.count(i));
+        QVERIFY(test_map.count<int>(i) == standard_map.count(i));
+
+        auto it1 = test_map.find(i);
+        auto it2 = standard_map.find(i);
+        test_iterator_equal(it1, it2, test_map.cend(), standard_map.cend());
+
+        auto it3 = test_map.find<int>(i);
+        auto it4 = standard_map.find(i);
+        test_iterator_equal(it3, it4, test_map.cend(), standard_map.cend());
+    }
+}
+
+void splay_map_test::testLowerUpperBounds()
+{
+    using TestMap = bushy::splay_map<int, char>;
+    using StandardMap = std::map<int, char>;
+
+    TestMap test_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+    StandardMap standard_map = { {1, 'a'}, {2, 'b'}, {3, 'c'}, {4, 'd'}, {5, 'e'}, {6, 'f'} };
+
+    for (int i = -5; i < 10; ++i)
+    {
+        {
+            auto r1 = test_map.equal_range(i);
+            auto r2 = standard_map.equal_range(i);
+            test_iterator_equal(r1.first, r2.first, test_map.cend(), standard_map.cend());
+            test_iterator_equal(r1.second, r2.second, test_map.cend(), standard_map.cend());
+        }
+
+        {
+            auto r1 = test_map.equal_range<int>(i);
+            auto r2 = standard_map.equal_range(i);
+            test_iterator_equal(r1.first, r2.first, test_map.cend(), standard_map.cend());
+            test_iterator_equal(r1.second, r2.second, test_map.cend(), standard_map.cend());
+        }
+
+        {
+            auto itLow1 = test_map.lower_bound(i);
+            auto itHigh1 = test_map.upper_bound(i);
+            auto itLow2 = standard_map.lower_bound(i);
+            auto itHigh2 = standard_map.upper_bound(i);
+
+            test_iterator_equal(itLow1, itLow2, test_map.cend(), standard_map.cend());
+            test_iterator_equal(itHigh1, itHigh2, test_map.cend(), standard_map.cend());
+        }
+
+        {
+            auto itLow1 = test_map.lower_bound<int>(i);
+            auto itHigh1 = test_map.upper_bound<int>(i);
+            auto itLow2 = standard_map.lower_bound(i);
+            auto itHigh2 = standard_map.upper_bound(i);
+
+            test_iterator_equal(itLow1, itLow2, test_map.cend(), standard_map.cend());
+            test_iterator_equal(itHigh1, itHigh2, test_map.cend(), standard_map.cend());
+        }
+    }
+}
+
 template<typename T>
 struct test_allocator : std::allocator<T>
 {
@@ -1437,6 +1536,19 @@ void splay_map_test::testMiscellanneousOperations()
         TestMap testMap(alloc);
 
         QVERIFY(testMap.get_allocator().valid);
+
+        // Test key comparator
+        auto keyComp = testMap.key_comp();
+        QVERIFY(keyComp(1,2));
+        QVERIFY(!keyComp(2,1));
+
+        auto valueComp = testMap.value_comp();
+        QVERIFY(valueComp(std::pair<int, char>(1, 'a'), std::pair<int, char>(2, 'a')));
+        QVERIFY(!valueComp(std::pair<int, char>(2, 'a'), std::pair<int, char>(1, 'a')));
+
+        testMap.memory_consumption_empty();
+        testMap.memory_consumption_item();
+        testMap.memory_consumption();
     }
 }
 

@@ -115,6 +115,7 @@ void MapBenchmark::testInsertFindDeleteUniform_impl(int size)
         for (const int value : data)
         {
             volatile auto it = map.find(value);
+            Q_UNUSED(it);
         }
 
         // Delete all data
@@ -186,6 +187,7 @@ void MapBenchmark::testFindUniform_impl(int size)
         for (const int value : data)
         {
             volatile auto it = map.find(value);
+            Q_UNUSED(it);
         }
     }
 
@@ -260,6 +262,7 @@ void MapBenchmark::testFindBinomialDistribution_impl(int size)
         {
             const int value = distribution(engine);
             volatile auto it = map.find(value);
+            Q_UNUSED(it);
         }
     }
 
@@ -334,6 +337,7 @@ void MapBenchmark::testFindGeometricDistribution_impl(int size)
         {
             const int value = distribution(engine);
             volatile auto it = map.find(value);
+            Q_UNUSED(it);
         }
     }
 

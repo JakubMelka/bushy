@@ -276,7 +276,7 @@ public:
     typedef std::template reverse_iterator<const_iterator> const_reverse_iterator;
 
     // Value comparator class
-    class value_compare
+    class value_compare final
     {
     public:
         typedef bool result_type;
@@ -285,12 +285,16 @@ public:
 
         inline bool operator()( const value_type& lhs, const value_type& rhs ) const
         {
-            return comp(lhs.first, rhs.first);
+            return _comp(lhs.first, rhs.first);
         }
 
-    protected:
-        explicit inline value_compare(Compare c) : comp(c) { }
-        Compare comp;
+    private:
+        // We must declare the splay map as the friend of this class, to ensure the protected
+        // constructor can be used.
+        friend class splay_map;
+
+        explicit inline value_compare(Compare c) : _comp(c) { }
+        Compare _comp;
     };
 
     // Constructors
@@ -786,11 +790,11 @@ public:
     inline value_compare value_comp() const { return value_compare(_comp); }
 
     // Memory consumption
-    static constexpr unsigned long memory_consumption_empty() { return sizeof(splay_map); }
-    static constexpr unsigned long memory_consumption_item() { return sizeof(node); }
+    static constexpr unsigned long long memory_consumption_empty() { return sizeof(splay_map); }
+    static constexpr unsigned long long memory_consumption_item() { return sizeof(node); }
 
     // Estimates overall memory consumption
-    constexpr unsigned long memory_consumption(unsigned long additional_item_memory = 0) const { return memory_consumption_empty() + _size * (memory_consumption_item() + additional_item_memory); }
+    constexpr unsigned long long memory_consumption(unsigned long long additional_item_memory = 0) const { return memory_consumption_empty() + _size * (memory_consumption_item() + additional_item_memory); }
 
 private:
     // Base node containing only pointers (to the parent/left child/right child),
@@ -989,6 +993,12 @@ private:
     // Replants the tree (moves tree to a new root)
     void _replant(base_node* new_root)
     {
+        if (empty())
+        {
+            // We have nothing to replant... tree is empty
+            return;
+        }
+
         base_node* current = _root.left;
         while (current != &_root)
         {
